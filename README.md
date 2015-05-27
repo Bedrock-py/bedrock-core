@@ -1,8 +1,6 @@
 bedrock-core
 ============
 
-Core framework APIs to support Bedrock applications
-
 THIS NOTICE APPLIES TO ALL FILES CONTAINED WITHIN THIS REPOSITORY
 
 Copyright (c) 2015, Georgia Tech Research Institute All rights reserved.
