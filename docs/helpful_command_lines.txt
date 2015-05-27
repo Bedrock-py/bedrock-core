@@ -1,0 +1,146 @@
+To clone a repo using HTTPS:
+1. cd into the directory where the repo is desired
+2. type git clone https://github.gatech.edu/DiamondEye/analytics.git de
+where https://github.gatech.edu/DiamondEye/analytics.git is the link, and de is the folder’s name where the files from the repo is downloaded
+
+To open the DiamondEye webpage:
+1. cd into the diamondeye-bells-master repo
+2. type vagrant up 
+3. type vagrant ssh
+4. type sudo service apache2 reload
+5. Navigate to http://192.168.33.101:82 in the browser
+6.  Username: gtri
+    Password: AAIB2015!
+
+
+To add a file in analytics under vagrant, where the file is under …/de/validateClusters.py
+0. make sure that the directory you sync is the one you do development in such as algorithms in the repo
+    e.g., ../Analytics-Framework-GTRI_PROPRIETARY/analytics/python/Analytics/algorithms
+1. cd into the diamondeye-bells-master repo
+2. type vagrant up 
+3. type vagrant ssh
+4. type sudo service apache2 reload
+5. type cd /var/www/analytics-framework/
+6. type python configure.py --api analytics --filename de.blackAdder --mode add
+    Note for this to work:
+        Must have a method: get_classname() defined. look at other examples
+        
+If the class metadata in an analytic file is modified, then:  
+7. type python configure.py --api analytics --filename de.analyticFileName --mode remove
+8. type python configure.py --api analytics --filename de.analyticFileName --mode add
+9. type sudo service apache2 reload
+for the changes to take in effect
+
+To check error of the UI run from Terminal:
+brain deadL 1. type sudo tail /var/log/apache2/error.log
+alive: 2, sudo less /var/log/apache2/error.log
+    shift f
+    cntrl c
+    q (for any less or more command)
+
+To install a package in vagrant:
+1. type sudo pip install package_name
+   (the package is automatically searched, so no need to download it first nor cd to its downloaded path)
+
+To see the resulting labels from RTC from UI on the testing data set:
+1. type vim analytics/data/irisTest ID/rtcResult ID/assignments.csv
+2. type :q to exit vim
+
+
+NMF directory under vagrant:
+/home/vagrant/smallk/nmf/bin/nmf
+
+To halt vagrant:
+If the Terminal is under vagrant, then:
+1. type exit
+2. type vagrant halt
+To re-up vagrant:
+3. type vagrant up
+4. type vagrant ssh
+
+To do data analytics in DE
+1. click on data management
+2. click on create resources
+3. click all check boxes
+4. choose matrix name: test_iris
+5 click static analysis
+6. click iris
+7. choose test_iris data matrix
+8. choose analytic: PCA for ex.
+
+To actually run an application:
+0. create or generate a .csv file with labels: see ba_nums.csv
+1. on numeric only data name the input as matrix.csv even for multiple inputs
+    the system will rename them and keep them straight
+    blackAdder: ba_nums.csf
+2. every time something is changed in the code do reload, remove, add as above
+3. first create a resource which is your original .csv file in 'create resource' using
+    the + icon at the top right
+3.1 on the Admin page, delete a resource with the - icon on the right side of page
+4. associate the resource with a matrix in DE
+5. in Static Analysis choose the resource to use, such as iris
+6. choose the matrix to run an analytic on
+7. choose the analytic at the bottom of the page (may need to scroll down
+    or delete some unused data structures)
+
+Currently, to run a quality measure on the clustering results
+0. choose cluster results from two different algorithms or two runs of the same
+    algorithm.
+        note that this means that two identical cluster assignment files can
+        not be used to test the quality measures from the UI. this will change at
+        some point.
+1. Choose Static Analyis - left frame
+2. Choose the source - e.g. iris
+3. choose a matrix - left frame below source frame - e.g., iris_matrix
+4. choose the results to use - for quality measures choose two clustering results
+    click on the first - e.g., kmeans_3
+    click on the second - e.g., nmf_3 (note just click, not shift-click or any other combo)
+5. below the matrix and results frames are the list of analytics
+    choose one of the information measures to use
+    
+Example analytic interface file:
+
+Anatomy lesson
+---------------
+-1. must have a get_classname(): method defined
+0. metadata is contained in the def __init__(self) method
+1. your code is executed in the compute(self, filepath, **kwargs) method
+    a. get your code working standalone first
+    b. the instantiation of your classes etc. will be used to invoke methods
+        from you module/package here
+        OR
+        just put your own code in the compute method and then populate self.results
+    
+<<<<< begin your interface >>>>>
+
+from ...analytics import Algorithm 
+
+import time, os, json
+import numpy as np
+from quality_measures_af import Measures as meas
+
+def get_classname():
+    return 'InformationDistance'
+
+class InformationDistance(Algorithm):
+    def __init__(self):
+        super(InformationDistance, self).__init__()
+        self.parameters = []
+        self.inputs = ['assignments.csv','assignments.csv']
+        self.outputs = ['assignments.csv','assignments.csv']
+        self.name ='Information Distance'
+        self.type = 'Information Measure'
+        self.description = """Compute the information distance measure, its range is [0, log(number of samples)].
+        A value closer to 0 means the distance in terms of information between
+        the two sets of clusters is small, or the clusters are more similar."""
+        self.parameters_spec = []
+        
+    # filepath in this case is an array of two filepaths
+    def compute(self, filepath, **kwargs):
+        self.inputs1 = np.genfromtxt(filepath[0] + 'assignments.csv', delimiter=',')
+        self.inputs2 = np.genfromtxt(filepath[1] + 'assignments.csv', delimiter=',')
+        cMeas = meas(self.inputs1,self.inputs2) # calls constructor with symbol sets, computes contingency table, and entropies
+        ID = {'Information Distance score': cMeas.information_distance()}
+        self.results = {'results.json': json.dumps(ID)}
+
+<<<<< end your interface >>>>>
