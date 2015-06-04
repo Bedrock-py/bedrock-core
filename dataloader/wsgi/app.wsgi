@@ -12,14 +12,10 @@
 # permission of the Georgia Tech Research Institute.
 #****************************************************************/
 
-import sys
-sys.path.insert(0, '/var/www/analytics-framework/dataloader/python/')
-from DataLoaderAPIv01 import app as application
-#from test import app as application
-#from werkzeug.debug import DebuggedApplication
-#application = DebuggedApplication(application, True)
-
+import logging, sys
+logging.basicConfig(stream=sys.stderr)
+sys.path.insert(0, '/var/www/bedrock/')
 from flask.ext.cors import CORS 
+from dataloader.dataloader_v01 import app as application
+
 CORS(application, headers='Content-Type')
-
-

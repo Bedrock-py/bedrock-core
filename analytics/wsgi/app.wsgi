@@ -14,10 +14,10 @@
 
 import logging, sys
 logging.basicConfig(stream=sys.stderr)
-sys.path.insert(0, '/var/www/analytics-framework/analytics/python/')
-from AnalyticsAPIv01 import app as application
-
+sys.path.insert(0, '/var/www/bedrock/')
 from flask.ext.cors import CORS 
+from analytics.analytics_v01 import app as application
+
 CORS(application, headers='Content-Type')
 
 

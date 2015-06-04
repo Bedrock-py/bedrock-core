@@ -1,5 +1,5 @@
 #****************************************************************
-#  File: analytics.py
+#  File: utils.py
 #
 # Copyright (c) 2015, Georgia Tech Research Institute
 # All rights reserved.
@@ -12,16 +12,137 @@
 # permission of the Georgia Tech Research Institute.
 #****************************************************************/
 
-import os, pymongo
+import os
+import pymongo
 import numpy as np
 from datetime import datetime
+import csv
+from datetime import datetime
+import pandas as pd
+import uuid
+
+def getNewId():
+	return uuid.uuid4().hex
+
+def getCurrentTime():
+	return str(datetime.now())
+
+#get a unique folder name and create the folder, return the filepath
+def setUpDirectory():
+    dirName = uuid.uuid4().hex
+    # dirName = datetime.now().strftime("%Y%m%d%H%M%S%f")
+    rootpath = DIRPATH + dirName + '/'
+    os.makedirs(rootpath)
+    return DIRPATH, dirName
+
+def setUpDirectoryMatrix(src_id):
+    dirName = uuid.uuid4().hex
+    # dirName = datetime.now().strftime("%Y%m%d%H%M%S%f")
+    rootpath = DIRPATH + src_id + '/' + dirName + '/'
+    os.makedirs(rootpath)
+    return rootpath, dirName
 
 
-ALGDIR = '/var/www/analytics-framework/analytics/python/Analytics/algorithms/'
-MONGO_HOST = 'localhost'
-MONGO_PORT = 27017
-MONGO_DB_NAME = 'analytics'
-ANALYTCS = 'analytics'
+#use pandas to load the csv file into the dataframe, 
+#using a header if appropriate
+def loadMatrix(filepath):
+    with open(filepath, 'rbU') as csvfile:
+        snippet = csvfile.read(2048)
+        sniffer = csv.Sniffer()
+        dialect = sniffer.sniff(snippet)
+
+    if sniffer.has_header(snippet):
+        df = pd.read_csv(filepath, dialect=dialect)
+    else:
+        df = pd.read_csv(filepath, dialect=dialect, header=None)
+
+    return df
+
+#write the output files associated with each loaded file
+#matrix.csv, features.txt, features_original.txt, and any non-numeric fields' mappings
+def writeFiles(maps, matrixFeatures, matrixFeaturesOriginal, rootpath, return_data=False):
+	#make directory
+    if not os.path.exists(rootpath):
+        os.makedirs(rootpath)
+
+    #write output files
+    toWrite = []
+    #list of features to write to the output features.txt file
+    features = []
+    featuresOrig = []
+
+    #determine if a feature is numeric or has a label mapping
+    for i, each in enumerate(matrixFeatures):
+    # for each in maps.keys():
+        if isinstance(maps[each], list):
+            toWrite.append(maps[each])
+        #since the feature has a label mapping, write out the label values in order for later reference
+        #filename is the feature name + .txt
+        else:
+            try:
+                toWrite.append([str(x) for x in maps[each]['values']])
+            except KeyError:
+                pass #ignore, since this is the mongoids field and has no values
+            #write the features to output
+            writeOutput(rootpath, each, maps[each]['indexToLabel'])
+        if matrixFeaturesOriginal[i] != '_id': #don't do this for mongoids
+            features.append(each)
+            featuresOrig.append(matrixFeaturesOriginal[i])
+
+
+    #write out the list of features
+    writeOutput(rootpath, 'features_original', featuresOrig)
+    writeOutput(rootpath, 'features', features)
+
+    toReturn = []
+    #convert lists to numpy arrays
+    #matrix is documents x features (i.e. rows = individual items and columns = features)
+    with open(rootpath + '/' + 'matrix.csv', 'w') as matrix:        
+        for i in range(len(toWrite[0])):
+            temp = []
+            for each in toWrite:
+                temp.append(each[i])
+                if return_data:
+                	toReturn.append(temp)
+            matrix.write(','.join(temp) + '\n')
+
+    if return_data:
+        return toReturn
+
+def updateFiles(maps, matrixFeatures, matrixFeaturesOriginal, rootpath, return_data=False):
+
+    #write output files
+    toWrite = []
+
+    #determine if a feature is numeric or has a label mapping
+    for i, each in enumerate(matrixFeatures):
+    # for each in maps.keys():
+        if isinstance(maps[each], list):
+            toWrite.append(maps[each])
+        #since the feature has a label mapping, write out the label values in order for later reference
+        #filename is the feature name + .txt
+        else:
+            try:
+                toWrite.append([str(x) for x in maps[each]['values']])
+            except KeyError:
+                pass #ignore, since this is the mongoids field and has no values
+            #write the features to output
+            appendOutput(rootpath, each, maps[each]['indexToLabel'])
+
+    toReturn = []
+    #convert lists to numpy arrays
+    #matrix is documents x features (i.e. rows = individual items and columns = features)
+    with open(rootpath + '/' + 'matrix.csv', 'a') as matrix:        
+        for i in range(len(toWrite[0])):
+            temp = []
+            for each in toWrite:
+                temp.append(each[i])
+            matrix.write(','.join(temp) + '\n')
+            if return_data:
+            	toReturn.append(temp)
+
+    if return_data:
+        return toReturn
 
 def initialize(alg, parameters):
     #options can be specific and unique for each algorithm
@@ -29,10 +150,10 @@ def initialize(alg, parameters):
         setattr(alg, each['attrname'], each['value'])
 
 def get_metadata(analytic_id):
-    exec("import algorithms." + analytic_id)
-    filename = "algorithms." + analytic_id
+    exec("import opals." + analytic_id)
+    filename = "opals." + analytic_id
     classname = filename.split(".")[-1]
-    objectname = "algorithms." + analytic_id + '.' + classname
+    objectname = "opals." + analytic_id + '.' + classname
     alg = eval(objectname)() #create the object specified
     metadata = {}
     metadata['name'] = alg.get_name()
@@ -46,10 +167,10 @@ def get_metadata(analytic_id):
 
 
 def run_analysis(queue, analytic_id, parameters, inputs, storepath, name):
-    exec("import algorithms." + analytic_id)
-    filename = "algorithms." + analytic_id
+    exec("import opals." + analytic_id)
+    filename = "opals." + analytic_id
     classname = filename.split(".")[-1]
-    objectname = "algorithms." + analytic_id + '.' + classname
+    objectname = "opals." + analytic_id + '.' + classname
     alg = eval(objectname)() #create the object specified
     initialize(alg, parameters)
     if alg.check_parameters():
@@ -188,25 +309,5 @@ class Algorithm(object):
 
     def get_outputs(self):
         return self.outputs
-
-
-# if __name__=='__main__':
-
-#     DIRPATH = '/var/www/analytics-framework/dataloader/data/'
-#     RESPATH = ''
-#     res_id = 'testing/'
-#     # matrix = { "created": "2014-11-12 17:28:03.585073","filters": [],"mat_id": "3846b9469ed545918f874dfda94506d8","mat_type": "csv","name": "city_pop","src_id": "6e0cde8003c1495989b3613e70b7b755"}
-#     # filepath = DIRPATH + matrix['src_id'] + '/' + matrix['mat_id'] + '/matrix.' + matrix['mat_type']
-#     storepath = RESPATH + res_id
-#     # os.makedirs(storepath)
-#     analytic_id = 'kmeans'
-#     # print filepath
-#     filepath = "../iris.txt"
-#     # inputData = data[:,[0,1]]
-#     # labels = data[:,2]
-    
-#     classname = "Kmeans"
-#     inputs =  [ { "name" : "Clusters", "pyID" : "numClusters", "value" : 3, "type" : "int" } ]
-#     run_analysis(classname,analytic_id, inputs, filepath, storepath)
 
 

@@ -13,15 +13,9 @@
 #****************************************************************/
 
 import argparse, sys
-sys.path.insert(1, '/var/www/analytics-framework/dataloader/python/')
-sys.path.insert(1, '/var/www/analytics-framework/analytics/python/')
-sys.path.insert(1, '/var/www/analytics-framework/visualization/python/')
-sys.path.insert(1, '/var/www/analytics-framework/workflows/python/')
-import DataLoader.ingest_utils
-import DataLoader.filter_utils
-import Analytics.analytics
-import Visualization.visualization
-
+sys.path.insert(1, '/var/www/bedrock/')
+import analytics.utils
+import dataloader.utils
 import pymongo
 
 MONGO_HOST = 'localhost'
@@ -47,6 +41,7 @@ if __name__=='__main__':
     parser.add_argument('--filename', action='store', required=True, metavar='filename')
     parser.add_argument('--mode', action='store', required=True, metavar='mode')
     args = parser.parse_args()
+    args.filename = args.filename[0:-3]
 
     #get the appropriate client
     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
@@ -56,7 +51,7 @@ if __name__=='__main__':
         if args.mode == 'remove':
             val = col.remove({'ingest_id':args.filename})
             if val['n'] != 0:
-                print 'REMOVED:', args.filename
+                print '    removed:', args.filename
                 exit(0)
             else:
                 print 'WARNING: No registered ingest module with that name.'
@@ -66,11 +61,11 @@ if __name__=='__main__':
             try:
                 col.find({'ingest_id':args.filename})[0]
             except IndexError:
-                metadata = DataLoader.ingest_utils.get_metadata(args.filename)
+                metadata = dataloader.utils.get_metadata(args.filename, api='ingest')
                 metadata['ingest_id'] = args.filename
                 col.insert(metadata)
                 meta = {key: value for key, value in metadata.items() if key != '_id'}
-                print 'ADDED: ', args.filename
+                print '    added: ', args.filename
                 exit(0)
             else:
                 print 'WARNING: Ingest module with that name is already registered.'
@@ -79,18 +74,18 @@ if __name__=='__main__':
         if args.mode == 'reload':
             val = col.remove({'ingest_id':args.filename})
             if val['n'] != 0:
-                print 'REMOVED:', args.filename
+                print '    removed:', args.filename
             else:
                 print 'WARNING: No registered ingest module with that name.'
                 exit(0)
             try:
                 col.find({'ingest_id':args.filename})[0]
             except IndexError:
-                metadata = DataLoader.ingest_utils.get_metadata(args.filename)
+                metadata = dataloader.utils.get_metadata(args.filename, api='ingest')
                 metadata['ingest_id'] = args.filename
                 col.insert(metadata)
                 meta = {key: value for key, value in metadata.items() if key != '_id'}
-                print 'ADDED: ', args.filename
+                print '    added: ', args.filename
                 exit(0)
             else:
                 print 'WARNING: Ingest module with that name is already registered.'
@@ -102,7 +97,7 @@ if __name__=='__main__':
         if args.mode == 'remove':
             val = col.remove({'filter_id':args.filename})
             if val['n'] != 0:
-                print 'REMOVED:', args.filename
+                print '    removed:', args.filename
                 exit(0)
             else:
                 print 'WARNING: No registered filter with that name.'
@@ -112,11 +107,11 @@ if __name__=='__main__':
             try:
                 col.find({'filter_id':args.filename})[0]
             except IndexError:
-                metadata = DataLoader.filter_utils.get_metadata(args.filename)
+                metadata = dataloader.utils.get_metadata(args.filename, api='filters')
                 metadata['filter_id'] = args.filename
                 col.insert(metadata)
                 meta = {key: value for key, value in metadata.items() if key != '_id'}
-                print 'ADDED: ', args.filename
+                print '    added: ', args.filename
                 exit(0)
             else:
                 print 'WARNING: Filter with that name is already registered.'
@@ -125,18 +120,18 @@ if __name__=='__main__':
         elif args.mode == 'reload':
             val = col.remove({'filter_id':args.filename})
             if val['n'] != 0:
-                print 'REMOVED:', args.filename
+                print '    removed:', args.filename
             else:
                 print 'WARNING: No registered filter with that name.'
                 exit(0)
             try:
                 col.find({'filter_id':args.filename})[0]
             except IndexError:
-                metadata = DataLoader.filter_utils.get_metadata(args.filename)
+                metadata = dataloader.utils.get_metadata(args.filename, api='filters')
                 metadata['filter_id'] = args.filename
                 col.insert(metadata)
                 meta = {key: value for key, value in metadata.items() if key != '_id'}
-                print 'ADDED: ', args.filename
+                print '    added: ', args.filename
                 exit(0)
             else:
                 print 'WARNING: Filter with that name is already registered.'
@@ -149,7 +144,7 @@ if __name__=='__main__':
         if args.mode == 'remove':
             val = col.remove({'analytic_id':args.filename})
             if val['n'] != 0:
-                print 'REMOVED:', args.filename
+                print '    removed:', args.filename
                 exit(0)
             else:
                 print 'WARNING: No registered analytic with that name.'
@@ -159,12 +154,12 @@ if __name__=='__main__':
             try:
                 col.find({'analytic_id':args.filename})[0]
             except IndexError:
-                exec("import Analytics.algorithms." + args.filename)
-                metadata = Analytics.analytics.get_metadata(args.filename)
+                exec("import analytics.opals." + args.filename)
+                metadata = analytics.utils.get_metadata(args.filename)
                 metadata['analytic_id'] = args.filename
                 col.insert(metadata)
                 meta = {key: value for key, value in metadata.items() if key != '_id'}
-                print 'ADDED: ', args.filename
+                print '    added: ', args.filename
                 exit(0)
             else:
                 print 'WARNING: Analytic with that name is already registered.'
@@ -173,19 +168,19 @@ if __name__=='__main__':
         elif args.mode == 'reload':
             val = col.remove({'analytic_id':args.filename})
             if val['n'] != 0:
-                print 'REMOVED:', args.filename
+                print '    removed:', args.filename
             else:
                 print 'WARNING: No registered analytic with that name.'
                 exit(0)
             try:
                 col.find({'analytic_id':args.filename})[0]
             except IndexError:
-                exec("import Analytics.algorithms." + args.filename)
-                metadata = Analytics.analytics.get_metadata(args.filename)
+                exec("import analytics.opals." + args.filename)
+                metadata = analytics.utils.get_metadata(args.filename)
                 metadata['analytic_id'] = args.filename
                 col.insert(metadata)
                 meta = {key: value for key, value in metadata.items() if key != '_id'}
-                print 'ADDED: ', args.filename
+                print '    added: ', args.filename
                 exit(0)
             else:
                 print 'WARNING: Analytic with that name is already registered.'
@@ -196,7 +191,7 @@ if __name__=='__main__':
         if args.mode == 'remove':
             val = col.remove({'workflow_id':args.filename})
             if val['n'] != 0:
-                print 'REMOVED:', args.filename
+                print '    removed:', args.filename
                 exit(0)
             else:
                 print 'WARNING: No registered workflow with that name.'
@@ -211,7 +206,7 @@ if __name__=='__main__':
                 metadata['workflow_id'] = args.filename
                 col.insert(metadata)
                 meta = {key: value for key, value in metadata.items() if key != '_id'}
-                print 'ADDED: ', args.filename
+                print '    added: ', args.filename
                 exit(0)
             else:
                 print 'WARNING: Workflow with that name is already registered.'
@@ -220,7 +215,7 @@ if __name__=='__main__':
         elif args.mode == 'reload':
             val = col.remove({'work_id':args.filename})
             if val['n'] != 0:
-                print 'REMOVED:', args.filename
+                print '    removed:', args.filename
             else:
                 print 'WARNING: No registered workflow with that name.'
                 exit(0)
@@ -232,7 +227,7 @@ if __name__=='__main__':
                 metadata['work_id'] = args.filename
                 col.insert(metadata)
                 meta = {key: value for key, value in metadata.items() if key != '_id'}
-                print 'ADDED: ', args.filename
+                print '    added: ', args.filename
                 exit(0)
             else:
                 print 'WARNING: Workflow with that name is already registered.'
@@ -244,7 +239,7 @@ if __name__=='__main__':
         if args.mode == 'remove':
             val = col.remove({'vis_id':args.filename})
             if val['n'] != 0:
-                print 'REMOVED:', args.filename
+                print '    removed:', args.filename
                 exit(0)
             else:
                 print 'WARNING: No registered visualization with that name.'
@@ -254,12 +249,12 @@ if __name__=='__main__':
             try:
                 col.find({'vis_id':args.filename})[0]
             except IndexError:
-                exec("import Visualization.vis." + args.filename)
-                metadata = Visualization.visualization.get_metadata(args.filename)
+                exec("import visualization.opals." + args.filename)
+                metadata = visualization.utils.get_metadata(args.filename)
                 metadata['vis_id'] = args.filename
                 col.insert(metadata)
                 meta = {key: value for key, value in metadata.items() if key != '_id'}
-                print 'ADDED: ', args.filename
+                print '    added: ', args.filename
                 exit(0)
             else:
                 print 'WARNING: Visualization with that name is already registered.'
@@ -268,19 +263,19 @@ if __name__=='__main__':
         elif args.mode == 'reload':
             val = col.remove({'vis_id':args.filename})
             if val['n'] != 0:
-                print 'REMOVED:', args.filename
+                print '    removed:', args.filename
             else:
                 print 'WARNING: No registered visualization with that name.'
                 exit(0)
             try:
                 col.find({'vis_id':args.filename})[0]
             except IndexError:
-                exec("import Visualization.vis." + args.filename)
-                metadata = Visualization.visualization.get_metadata(args.filename)
+                exec("import visualization.opals." + args.filename)
+                metadata = visualization.utils.get_metadata(args.filename)
                 metadata['vis_id'] = args.filename
                 col.insert(metadata)
                 meta = {key: value for key, value in metadata.items() if key != '_id'}
-                print 'ADDED: ', args.filename
+                print '    added: ', args.filename
                 exit(0)
             else:
                 print 'WARNING: Visualization with that name is already registered.'

@@ -15,7 +15,7 @@
 import logging, sys
 logging.basicConfig(stream=sys.stderr)
 
-sys.path.insert(0, '/var/www/analytics-framework/workflows/python/')
+sys.path.insert(0, '/var/www/bedrock/workflows/python/')
 from WorkflowsAPIv01 import app as application
 
 from flask.ext.cors import CORS 

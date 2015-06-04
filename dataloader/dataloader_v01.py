@@ -19,29 +19,18 @@ from flask.ext import restful
 from flask.ext.restplus import Api, Resource, fields
 import pymongo, sys, json, os, socket, shutil, string, re
 from bson.json_util import dumps
-# from DataLoader import CSVLoader, MongoLoader, utils, FileLoader
-from DataLoader import ingest_utils, utils
+import utils
+# raise Exception(utils)
 from werkzeug import secure_filename
 from bson.objectid import ObjectId
-
 import requests
-
 import urllib2
-
+from DATALOADER_CONSTANTS import *
 
 app = Flask(__name__)
 app.debug = True
 
 ALLOWED_EXTENSIONS = set(['csv', 'tsv', 'mtx', 'xls', 'xlsx', 'zip','txt'])
-MONGO_HOST = 'localhost'
-MONGO_PORT = 27017
-MONGO_DB_NAME = 'dataloader'
-MONGO_COL_NAME = 'sources'
-MODULES_COL_NAME = 'ingest'
-FILTERS_COL_NAME = 'filters'
-DIRPATH = '/var/www/analytics-framework/dataloader/data/'
-RESPATH = '/var/www/analytics-framework/analytics/data/'
-RESULTS = 'results'
 
 api = Api(app, version="0.1", title="DataLoader API", 
     description="Analytics-Framework API supporting creation and use of matrices (Copyright &copy 2015, Georgia Tech Research Institute)")
@@ -155,7 +144,7 @@ class IngestModules(Resource):
         All ingest modules registered in the system will be returned. If you believe there is an ingest module that exists in the system but is not present here, it is probably not registered in the MongoDB database.
         '''
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_DB_NAME][MODULES_COL_NAME]
+        col = client[DATALOADER_DB_NAME][INGEST_COL_NAME]
         cur = col.find()
         ingest = []
         for c in cur:
@@ -173,7 +162,7 @@ class Filters(Resource):
         All filters registered in the system will be returned. If you believe there is a filter that exists in the system but is not present here, it is probably not registered in the MongoDB database.
         '''
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_DB_NAME][FILTERS_COL_NAME]
+        col = client[DATALOADER_DB_NAME][FILTERS_COL_NAME]
         cur = col.find()
         filters = []
         for c in cur:
@@ -192,7 +181,7 @@ class Sources(Resource):
         All sources registered in the system will be returned.
         '''
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+        col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
         cur = col.find()
         sources = []
         for src in cur:
@@ -214,12 +203,12 @@ class Sources(Resource):
         Deletes all stored sources.
         This will permanently remove all sources from the system. USE CAREFULLY!
         '''
-        col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+        col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
         #remove the entries in mongo
         col.remove({})
         #remove the actual files
-        for directory in os.listdir(DIRPATH):
-            file_path = os.path.join(DIRPATH, directory)
+        for directory in os.listdir(DATALOADER_PATH):
+            file_path = os.path.join(DATALOADER_PATH, directory)
             shutil.rmtree(file_path)
 
         return '', 204
@@ -233,7 +222,7 @@ class Sources(Resource):
             '''
 
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+            col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
             try:
                 matrices = col.find({'src_id':src_id})[0]['matrices']
             except IndexError:
@@ -267,7 +256,7 @@ class Sources(Resource):
                 else:
                     src_type = 'file'
 
-                rootpath = DIRPATH + src_id + '/source/'
+                rootpath = DATALOADER_PATH + src_id + '/source/'
                 filename = secure_filename(file.filename)
                 if not os.path.exists(rootpath):
                     os.makedirs(rootpath, 0775)
@@ -278,7 +267,7 @@ class Sources(Resource):
                 conn_info = request.get_json()
 
                 src_type = 'conf'
-                dirOriginal = DIRPATH + src_id + '/source/'
+                dirOriginal = DATALOADER_PATH + src_id + '/source/'
 
                 os.makedirs(dirOriginal, 0775)
                 filepath = os.path.join(dirOriginal, 'conf.json')
@@ -288,9 +277,9 @@ class Sources(Resource):
 
 
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+            col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
 
-            rootpath = DIRPATH  + src_id + '/'
+            rootpath = DATALOADER_PATH  + src_id + '/'
 
             source = {}
             source['name'] = name
@@ -328,7 +317,7 @@ class Sources(Resource):
             '''
 
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+            col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
             cur = col.find()
             explorable = []
             for src in cur:
@@ -353,7 +342,7 @@ class Sources(Resource):
             Returns metadata and a list of matrices available for a particular source.
             '''
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+            col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
             try:
                 src = col.find({'src_id':src_id})[0]
 
@@ -371,8 +360,8 @@ class Sources(Resource):
             This will permanently remove this source from the system. USE CAREFULLY!
             '''
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][MONGO_COL_NAME]
-            res_col = client[MONGO_DB_NAME][RESULTS]
+            col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
+            res_col = client[DATALOADER_DB_NAME][RESULTS]
 
             try:
                 matrices = col.find({'src_id':src_id})[0]['matrices']
@@ -383,7 +372,7 @@ class Sources(Resource):
             else:
                 for each in matrices:
                     mat_id = each['id']
-                    shutil.rmtree(DIRPATH + src_id + '/' + mat_id)
+                    shutil.rmtree(DATALOADER_PATH + src_id + '/' + mat_id)
 
                     try:
                         res = res_col.find({'src_id':mat_id})[0]['results']
@@ -395,7 +384,7 @@ class Sources(Resource):
                         pass
 
                 col.remove({'src_id':src_id})
-                shutil.rmtree(DIRPATH + src_id)
+                shutil.rmtree(DATALOADER_PATH + src_id)
                 return '', 204
 
 
@@ -408,7 +397,7 @@ class Sources(Resource):
             '''
             posted_data = request.get_json(force=True)
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+            col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
 
             try:
                 src = col.find({'src_id':src_id})[0]
@@ -416,7 +405,7 @@ class Sources(Resource):
             except IndexError:
                 return 'No resource at that URL.', 404
 
-            error, matricesNew = ingest_utils.ingest(posted_data, src)
+            error, matricesNew = utils.ingest(posted_data, src)
 
             if error:
                 return 'Unable to create matrix.', 406
@@ -440,7 +429,7 @@ class Sources(Resource):
                 '''
 
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+                col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
                 try:
                     src = col.find({'src_id':src_id})[0]
                 except IndexError:
@@ -450,17 +439,17 @@ class Sources(Resource):
 
                 #get filters
                 f_client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                f_col = client[MONGO_DB_NAME][FILTERS_COL_NAME]
+                f_col = client[DATALOADER_DB_NAME][FILTERS_COL_NAME]
                 filters = f_col.find()
 
-                return ingest_utils.explore(src['ingest_id'], filepath, filters)
+                return utils.explore(src['ingest_id'], filepath, filters)
 
 
         @ns.route('/<src_id>/shame/')
         class Shame(Resource):
             def get(self, src_id):
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                col = client[MONGO_DB_NAME]["instagram"]
+                col = client[DATALOADER_DB_NAME]["instagram"]
 
 		try:
                     limit = int(request.args.get('limit', '20'))
@@ -493,7 +482,7 @@ class Sources(Resource):
         class ShameMark(Resource):
             def post(self, src_id, img_id):
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                col = client[MONGO_DB_NAME]["instagram"]
+                col = client[DATALOADER_DB_NAME]["instagram"]
 
                 try:
 		    print img_id
@@ -506,7 +495,7 @@ class Sources(Resource):
         class ShameShow(Resource):
             def get(self, src_id, option):
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+                col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
                 try:
                     src = col.find({'src_id':src_id})[0]
                 except IndexError:
@@ -523,7 +512,7 @@ class Sources(Resource):
                     skip = 0
 		
                 filepath = src['rootdir'] + 'source/conf.json'
-                ingest = ingest_utils.IngestModule()
+                ingest = utils.IngestModule()
                 ingest.initialize(filepath)
                 self.db = ingest.db
                 self.col = ingest.col
@@ -541,14 +530,14 @@ class Sources(Resource):
         class ShameOption3(Resource):
             def post(self, src_id, option):
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+                col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
                 try:
                     src = col.find({'src_id':src_id})[0]
                 except IndexError:
                     return 'No resource at that URL.', 404
 
                 filepath = src['rootdir'] + 'source/conf.json'
-                ingest = ingest_utils.IngestModule()
+                ingest = utils.IngestModule()
                 ingest.initialize(filepath)
                 self.db = ingest.db
                 self.col = ingest.col
@@ -569,14 +558,14 @@ class Sources(Resource):
         class GetTags(Resource):
             def get(self, src_id):
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+                col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
                 try:
                     src = col.find({'src_id':src_id})[0]
                 except IndexError:
                     return 'No resource at that URL.', 404
 
                 filepath = src['rootdir'] + 'source/conf.json'
-                ingest = ingest_utils.IngestModule()
+                ingest = utils.IngestModule()
                 ingest.initialize(filepath)
                 self.db = ingest.db
                 self.col = ingest.col
@@ -638,7 +627,7 @@ class Sources(Resource):
                 No payload is sent for this request.
                 '''
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+                col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
                 try:
                     src = col.find({'src_id':src_id})[0]
 
@@ -649,9 +638,9 @@ class Sources(Resource):
 
                 #get filters
                 f_client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                f_col = client[MONGO_DB_NAME][FILTERS_COL_NAME]
+                f_col = client[DATALOADER_DB_NAME][FILTERS_COL_NAME]
                 filters = f_col.find()
-                return ingest_utils.stream(src['ingest_id'], filepath)
+                return utils.stream(src['ingest_id'], filepath)
 
             def patch(self, src_id):
                 '''
@@ -660,7 +649,7 @@ class Sources(Resource):
 
                 '''
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+                col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
                 try:
                     src = col.find({'src_id':src_id})[0]
 
@@ -671,9 +660,9 @@ class Sources(Resource):
 
                 #get filters
                 f_client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                f_col = client[MONGO_DB_NAME][FILTERS_COL_NAME]
+                f_col = client[DATALOADER_DB_NAME][FILTERS_COL_NAME]
                 filters = f_col.find()
-                ingest_utils.update(src['ingest_id'], filepath)
+                utils.update(src['ingest_id'], filepath)
                 return
 
 
@@ -685,7 +674,7 @@ class Sources(Resource):
                 Returns metadata for the matrix specified.
                 '''
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+                col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
                 try:
                     matrices = col.find({'src_id':src_id})[0]['matrices']
 
@@ -707,7 +696,7 @@ class Sources(Resource):
                 This will permanently remove this matrix and any results generated from it from the system. USE CAREFULLY!
                 '''
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+                col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
                 try:
                     matrices = col.find({'src_id':src_id})[0]['matrices']
 
@@ -727,9 +716,9 @@ class Sources(Resource):
                     else:
                         return 'No resource at that URL.', 404
 
-                    shutil.rmtree(DIRPATH + src_id + '/' + mat_id)
+                    shutil.rmtree(DATALOADER_PATH + src_id + '/' + mat_id)
 
-                    col = client[MONGO_DB_NAME][RESULTS]
+                    col = client[DATALOADER_DB_NAME][RESULTS]
                     try:
                         col.remove({'src_id':mat_id})
                         shutil.rmtree(RESPATH + mat_id)
@@ -748,7 +737,7 @@ class Sources(Resource):
                     Returns the REAMDME content for the specified matrix.
                     '''
                     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                    col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+                    col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
                     try:
                         matrices = col.find({'src_id':src_id})[0]['matrices']
 
@@ -775,7 +764,7 @@ class Sources(Resource):
                     Features are the names for the columns within the matrix.
                     '''
                     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                    col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+                    col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
                     try:
                         matrices = col.find({'src_id':src_id})[0]['matrices']
 
@@ -825,7 +814,7 @@ class Sources(Resource):
 #             return ('Posted data is invalid.', 400)
 
 #         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-#         col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+#         col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
 #         try:
 #             src = col.find({'src_id':src_id})[0]
 
@@ -865,9 +854,9 @@ class Sources(Resource):
 #     t = utils.getCurrentTime()
 
 #     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-#     col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+#     col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
 
-#     rootpath = DIRPATH  + src_id + '/'
+#     rootpath = DATALOADER_PATH  + src_id + '/'
 #     os.makedirs(rootpath)
 
 #     source = {}
@@ -921,10 +910,10 @@ class Sources(Resource):
 #     if not ext in ALLOWED_EXTENSIONS:
 #         return ('This filetype is not supported.', 415)
 
-#     FileLoader.saveFile(file, DIRPATH + src_id + '/' + mat_id + '/')
+#     FileLoader.saveFile(file, DATALOADER_PATH + src_id + '/' + mat_id + '/')
 
 #     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-#     col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+#     col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
 #     matrix = col.find({'src_id':src_id})[0]['matrices'][0]
 #     if 'matrix' in file.filename:
 #         matrix['mat_type'] = ext

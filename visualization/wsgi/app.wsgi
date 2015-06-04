@@ -13,8 +13,8 @@
 #****************************************************************/
 
 import sys
-sys.path.insert(0, '/var/www/analytics-framework/visualization/python/')
-from VisualizationAPIv01 import app as application
+sys.path.insert(0, '/var/www/bedrock/')
+from visualization.visualization_v01 import app as application
 
 from flask.ext.cors import CORS 
 CORS(application, headers='Content-Type')

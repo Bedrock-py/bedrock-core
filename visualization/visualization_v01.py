@@ -18,20 +18,8 @@ from flask import stream_with_context, request, Response
 import pymongo, sys, json, os, socket, shutil, string, re
 from flask.ext import restful
 from flask.ext.restplus import Api, Resource, fields
-from Visualization import visualization
-
-DIRPATH = '/var/www/analytics-framework/dataloader/data/'
-RESPATH = '/var/www/analytics-framework/analytics/data/'
-ALGDIR = '/var/www/analytics-framework/analytics/python/Analytics/algorithms/'
-MONGO_HOST = 'localhost'
-MONGO_PORT = 27017
-MONGO_DB_NAME = 'visualization'
-ALLOWED_EXTENSIONS = ['py']
-ANALYTCS_API = 'http://10.90.23.200:81/analytics/api/0.1/'
-DATALOADER_API = 'http://10.90.23.200:81/dataloader/api/0.1/'
-VIS = 'visualizations'
-
-
+import utils
+from VISUALIZATION_CONSTANTS import *
 
 app = Flask(__name__)
 app.debug = True
@@ -127,7 +115,7 @@ class Options(Resource):
         vis_options = []
 
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_DB_NAME][VIS]
+        col = client[VIS_DB_NAME][VIS_COL_NAME]
         cur = col.find()
         if len(data) != 1:
             outputsPersist = []
@@ -167,7 +155,7 @@ class Options(Resource):
         vis_options = []
 
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_DB_NAME][VIS]
+        col = client[VIS_DB_NAME][VIS_COL_NAME]
         cur = col.find()
         for c in cur:
             response = {key: value for key, value in c.items() if key != '_id'}
@@ -186,6 +174,6 @@ class Vis(Resource):
         data = request.get_json()
         parameters = data['parameters']
         inputs = data['inputs']
-        return visualization.generate_vis(vis_id, inputs, parameters)
+        return utils.generate_vis(vis_id, inputs, parameters)
 
 

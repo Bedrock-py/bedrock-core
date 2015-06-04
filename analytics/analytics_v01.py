@@ -16,27 +16,16 @@ from flask import Flask, request, jsonify, redirect, url_for, g, abort, send_fro
 import markdown, json
 from flask import stream_with_context, request, Response
 import pymongo, sys, json, os, socket, shutil, string, re
-from Analytics import analytics, utils
+import utils
 from werkzeug import secure_filename
 from flask.ext import restful
 from flask.ext.restplus import Api, Resource, fields
 from datetime import datetime
 import subprocess
 from multiprocessing import Process, Queue
+from ANALYTICS_CONSTANTS import *
 
-
-DIRPATH = '/var/www/analytics-framework/dataloader/data/'
-RESPATH = '/var/www/analytics-framework/analytics/data/'
-ALGDIR = '/var/www/analytics-framework/analytics/python/Analytics/algorithms/'
-TESTFILEPATH = '/var/www/analytics-framework/analytics/python/Analytics/'
-TESTSTOREPATH = '/var/www/analytics-framework/analytics/data/temp/'
-MONGO_HOST = 'localhost'
-MONGO_PORT = 27017
-MONGO_DB_NAME = 'analytics'
-ANALYTCS = 'analytics'
-RESULTS = 'results'
 ALLOWED_EXTENSIONS = ['py']
-
 
 app = Flask(__name__)
 app.debug = True
@@ -148,7 +137,7 @@ class Analytics(Resource):
         All analytics registered in the system will be returned. If you believe there is an analytic that exists in the system but is not present here, it is probably not registered in the MongoDB database.
         '''
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_DB_NAME][ANALYTCS]
+        col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
         cur = col.find()
         analytics = []
         for src in cur:
@@ -176,64 +165,64 @@ class Analytics(Resource):
         filename = secure_filename(file.filename)
         name = re.split('\.', filename)[0]
         analytic_id = name + str(time.year) + str(time.month) + str(time.day) + str(time.hour) + str(time.minute) + str(time.second)
-        filepath = ALGDIR + analytic_id + '.py'
+        filepath = ANALYTICS_OPALS + analytic_id + '.py'
         file.save(filepath)
 
         #get the metadata from the file
-        metadata = analytics.get_metadata(analytic_id)
+        metadata = utils.get_metadata(analytic_id)
         metadata['analytic_id'] = analytic_id
 
 
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_DB_NAME][ANALYTCS]
+        col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
 
         col.insert(metadata)
         meta = {key: value for key, value in metadata.items() if key != '_id'}
 
         return meta, 201
 
-    @api.hide
-    @api.doc(responses={201: 'Success', 406: 'Error with analytic content'})
-    def post(self):
-        '''
-        Add a new analytic via form
-        '''
-        time = datetime.now()
-        # make the id more meaningful
-        data = request.get_json()
+    # @api.hide
+    # @api.doc(responses={201: 'Success', 406: 'Error with analytic content'})
+    # def post(self):
+    #     '''
+    #     Add a new analytic via form
+    #     '''
+    #     time = datetime.now()
+    #     # make the id more meaningful
+    #     data = request.get_json()
 
-        #create a temp file
-        time = datetime.now()
-        analytic_id = data['classname'] + str(time.year) + str(time.month) + str(time.day) + str(time.hour) + str(time.minute) + str(time.second)
+    #     #create a temp file
+    #     time = datetime.now()
+    #     analytic_id = data['classname'] + str(time.year) + str(time.month) + str(time.day) + str(time.hour) + str(time.minute) + str(time.second)
 
-        with open(ALGDIR + analytic_id + '.py', 'w') as temp:
-            temp.write('def get_classname():\n    return \'' + data['classname'] + '\'\n\n')
-            temp.write(data['code'] + '\n\n')
+    #     with open(ANALYTICS_OPALS + analytic_id + '.py', 'w') as temp:
+    #         temp.write('def get_classname():\n    return \'' + data['classname'] + '\'\n\n')
+    #         temp.write(data['code'] + '\n\n')
 
 
-        #test the alg with a dense matrix, show traceback, delete analytic file
-        success = analytics.test_analysis(analytic_id, TESTFILEPATH, TESTSTOREPATH)
-        if not success:
-                os.remove(ALGDIR + analytic_id + '.py')
-                return 'Problem with provided algorithm', 406
+    #     #test the alg with a dense matrix, show traceback, delete analytic file
+    #     success = utils.test_analysis(analytic_id, TESTFILEPATH, TESTSTOREPATH)
+    #     if not success:
+    #             os.remove(ANALYTICS_OPALS + analytic_id + '.py')
+    #             return 'Problem with provided algorithm', 406
 
-        #save the file, delete results
-        else:  
-            for i in os.listdir(TESTSTOREPATH):
-                os.remove(TESTSTOREPATH + i)
-            #get the metadata from the file
-            metadata = analytics.get_metadata(analytic_id)
-            metadata['analytic_id'] = analytic_id
+    #     #save the file, delete results
+    #     else:  
+    #         for i in os.listdir(TESTSTOREPATH):
+    #             os.remove(TESTSTOREPATH + i)
+    #         #get the metadata from the file
+    #         metadata = utils.get_metadata(analytic_id)
+    #         metadata['analytic_id'] = analytic_id
 
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][ANALYTCS]
+    #         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+    #         col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
 
-            col.insert(metadata)
-            meta = {key: value for key, value in metadata.items() if key != '_id'}
+    #         col.insert(metadata)
+    #         meta = {key: value for key, value in metadata.items() if key != '_id'}
 
-            return meta, 201
+    #         return meta, 201
 
-        return ''
+    #     return ''
 
     @ns_a.route('/options/')
     class Options(Resource):
@@ -260,7 +249,7 @@ class Analytics(Resource):
             analytics = []
 
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][ANALYTCS]
+            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
             cur = col.find()
             analytics = []
             if len(data) != 1:
@@ -295,7 +284,7 @@ class Analytics(Resource):
             All analytics registered in the system with a type of 'Clustering' will be returned. If you believe there is an analytic that exists in the system but is not present here, it is probably not registered in the MongoDB database.
             '''
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][ANALYTCS]
+            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
             cur = col.find()
             analytics = []
             for src in cur:
@@ -314,7 +303,7 @@ class Analytics(Resource):
             All analytics registered in the system with a type of 'Classification' will be returned. If you believe there is an analytic that exists in the system but is not present here, it is probably not registered in the MongoDB database.
             '''
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][ANALYTCS]
+            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
             cur = col.find()
             analytics = []
             for src in cur:
@@ -333,7 +322,7 @@ class Analytics(Resource):
             All analytics registered in the system with a type of 'Dimension Reduction' will be returned. If you believe there is an analytic that exists in the system but is not present here, it is probably not registered in the MongoDB database.
             '''
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][ANALYTCS]
+            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
             cur = col.find()
             analytics = []
             for src in cur:
@@ -352,7 +341,7 @@ class Analytics(Resource):
             All analytics registered in the system with a type of 'Statistical' will be returned. If you believe there is an analytic that exists in the system but is not present here, it is probably not registered in the MongoDB database.
             '''
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][ANALYTCS]
+            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
             cur = col.find()
             analytics = []
             for src in cur:
@@ -373,7 +362,7 @@ class Analytics(Resource):
             This will permanently remove this analytic from the system. USE CAREFULLY!
             '''
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][ANALYTCS]
+            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
             try:
                 analytic = col.find({'analytic_id':analytic_id})[0]
 
@@ -382,7 +371,7 @@ class Analytics(Resource):
 
             else:
                 col.remove({'analytic_id':analytic_id})
-                os.remove(ALGDIR + analytic_id + '.py')
+                os.remove(ANALYTICS_OPALS + analytic_id + '.py')
 
                 return '', 204
         
@@ -393,7 +382,7 @@ class Analytics(Resource):
             Returns the details of the specified analytic.
             '''
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][ANALYTCS]
+            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
             try:
                 analytic = col.find({'analytic_id':analytic_id})[0]
             except IndexError:
@@ -415,7 +404,7 @@ class Analytics(Resource):
             '''
             #get the analytic
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][ANALYTCS]
+            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
             isResultSource = False
 
             #get the input data
@@ -432,25 +421,26 @@ class Analytics(Resource):
                 mat_id = data['src'][0]['src_id']
             else:
                 mat_id = sub_id
-            storepath = RESPATH + mat_id + '/' + res_id + '/'
+            storepath = RESUTLS_PATH + mat_id + '/' + res_id + '/'
             os.makedirs(storepath)
 
             #run analysis
             queue = Queue()
-            p = Process(target=analytics.run_analysis, args=(queue, analytic_id, parameters, inputs, storepath, name))
+            # raise Exception(utils)
+            p = Process(target=utils.run_analysis, args=(queue, analytic_id, parameters, inputs, storepath, name))
             p.start()
             p.join() # this blocks until the process terminates
             outputs = queue.get()
             if outputs != None:
 
                 #store metadata
-                res_col = client[MONGO_DB_NAME][RESULTS]
+                res_col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
                 try:
                     src = res_col.find({'src_id':mat_id})[0]
 
                 except IndexError:
                     src = {}
-                    src['rootdir'] = RESPATH + mat_id + '/'
+                    src['rootdir'] = RESUTLS_PATH + mat_id + '/'
                     src['src'] = data['src'][0]
                     src['src_id'] = data['src'][0]['id']
                     src['results'] = []
@@ -476,9 +466,9 @@ class Analytics(Resource):
 
                 return res, 201
             else:
-                out = subprocess.call('tail /var/www/analytics-framework/conf/error.log > /var/www/analytics-framework/error.txt', shell=True)
-                # out = subprocess.call("sed -i 's/\[[a-zA-Z].*[0-9]\]//g' /var/www/analytics-framework/error.txt", shell=True)                    output.write(out)
-                with open('/var/www/analytics-framework/error.txt') as out:
+                out = subprocess.call('tail /var/www/bedrock/conf/error.log > /var/www/bedrock/error.txt', shell=True)
+                # out = subprocess.call("sed -i 's/\[[a-zA-Z].*[0-9]\]//g' /var/www/bedrock/error.txt", shell=True)                    output.write(out)
+                with open('/var/www/bedrock/error.txt') as out:
                     outcontent = out.read()
                 return outcontent, 406
 
@@ -490,7 +480,7 @@ class Analytics(Resource):
             '''
             #get the analytic
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][ANALYTCS]
+            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
             try:
                 analytic = col.find({'analytic_id':analytic_id})[0]
             except IndexError:
@@ -518,7 +508,7 @@ class Results(Resource):
         Returns a list of available results.
         '''
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_DB_NAME][RESULTS]
+        col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
         cur = col.find()
         results = []
         for src in cur:
@@ -534,12 +524,12 @@ class Results(Resource):
         Deletes all stored results.
         '''
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_DB_NAME][RESULTS]
+        col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
         #remove the entries in mongo
         col.remove({})
         #remove the actual files
-        for directory in os.listdir(RESPATH):
-            file_path = os.path.join(RESPATH, directory)
+        for directory in os.listdir(RESUTLS_PATH):
+            file_path = os.path.join(RESUTLS_PATH, directory)
             shutil.rmtree(file_path)
 
         return '', 204
@@ -552,7 +542,7 @@ class Results(Resource):
             Returns a list of explorable results.
             '''
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][RESULTS]
+            col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
             cur = col.find()
             explorable = []
             for src in cur:
@@ -577,7 +567,7 @@ class Results(Resource):
             '''
 
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][RESULTS]
+            col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
             try:
                 res = col.find({'src_id':src_id})[0]['results']
             except IndexError:
@@ -603,7 +593,7 @@ class Results(Resource):
 
             '''
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][RESULTS]
+            col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
             try:
                 res = col.find({'src_id':src_id})[0]['results']
 
@@ -612,7 +602,7 @@ class Results(Resource):
 
             else:
                 col.remove({'src_id':src_id})
-                shutil.rmtree(RESPATH + src_id)
+                shutil.rmtree(RESUTLS_PATH + src_id)
                 return '', 204
 
         @api.doc(model='Results')
@@ -621,7 +611,7 @@ class Results(Resource):
             Returns the specified result tree.
             '''
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][RESULTS]
+            col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
             try:
                 res = col.find({'src_id':src_id})[0]
 
@@ -645,7 +635,7 @@ class Results(Resource):
             This will permanently remove this result from the system. USE CAREFULLY!
             '''
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][RESULTS]
+            col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
             try:
                 res = col.find({'src_id':src_id})[0]['results']
 
@@ -665,7 +655,7 @@ class Results(Resource):
                 else:
                     return 'No resource at that URL.', 404
 
-                shutil.rmtree(RESPATH + src_id + '/' + res_id)
+                shutil.rmtree(RESUTLS_PATH + src_id + '/' + res_id)
                 return '', 204
 
         @api.doc(responses={200: 'Success', 404: 'No resource at that URL'})
@@ -675,7 +665,7 @@ class Results(Resource):
             Returns the specified result.
             '''
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[MONGO_DB_NAME][RESULTS]
+            col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
             try:
                 res = col.find({'src_id':src_id})[0]['results']
 
