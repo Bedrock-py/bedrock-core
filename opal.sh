@@ -1,4 +1,54 @@
 
+if [ $1 = "-h" ]; then
+	echo "Use this script to install, remove, or reload opals or to install and remove applications:"
+	echo ""
+	echo "    ./opal.sh install [name of opal to be installed]"
+	echo "    ./opal.sh remove [name of opal to be removed]"
+	echo "    ./opal.sh reload [name of opal to be reloaded]"
+	echo ""
+	echo "    ./opal.sh install application [filepath for application json specification]"
+	echo "    ./opal.sh remove application [filepath for application json specification]"
+	echo ""
+	exit 0
+
+elif [ $1 = "clean" ]; then
+	if [ -z $2 ]; then
+		echo "Cleaning bedrock..."
+
+		sudo rm analytics/opals/*.pyc 2>/dev/null
+		sudo rm analytics/*.pyc 2>/dev/null
+
+		sudo rm dataloader/opals/*.pyc 2>/dev/null
+		sudo rm dataloader/*.pyc 2>/dev/null
+
+		sudo rm visualization/opals/*.pyc 2>/dev/null
+		sudo rm visualization/*.pyc 2>/dev/null
+
+		sudo rm *.pyc 2>/dev/null
+
+
+
+	else
+		echo "Cleaning $2..."
+		sudo rm $2/opals/*.pyc 2>/dev/null
+		sudo rm $2/*.pyc 2>/dev/null
+
+	fi
+	exit 0
+
+elif [ $1 = "list" ]; then
+
+	if [ $2 = "installed" ]; then
+		cat installed_opals.txt
+
+	else
+		echo "Available opals:"
+		jq 'keys' ../bedrock-opalserver/master_conf.json
+	fi
+	exit 0
+
+fi
+
 
 #get metadata
 URL=$(cat ../bedrock-opalserver/master_conf.json | jq '.["'$2'"]'.remote)
@@ -14,6 +64,11 @@ INTERFACE="${INTERFACE%\"}"
 INTERFACE="${INTERFACE#\"}"
 
 TARGET=/var/www/bedrock/$API/opals/
+if [ "$URL" = null ]; then
+	echo "ERROR: No opal by that name."
+	exit 0
+fi 
+
 
 if [ $1 = "install" ]; then
 
@@ -46,14 +101,14 @@ if [ $1 = "install" ]; then
 		#iterate through the supports and symlink
 		for f in $SUPPORTS
 		do
+		  if ! [[ "$f" = "\"\"" ]]; then
 			f="${f%\"}"
 			f="${f#\"}"
 			f=../$2/$f
-  		      if [ ! -z "$f" ]; then
-				MY_PATH=$(readlink -f $f)
-				echo "    linking: $MY_PATH"
-				sudo ln -s $MY_PATH $TARGET
-			  fi
+			MY_PATH=$(readlink -f $f)
+			echo "    linking: $MY_PATH"
+			sudo ln -s $MY_PATH $TARGET
+		  fi
 		done	
 
 		#iterate through the units and symlink/install
@@ -98,10 +153,10 @@ elif [ $1 = "remove" ]; then
 
 		for f in $SUPPORTS
 		do
-		  f="${f%\"}"
-		  f="${f#\"}"
-		  f=../$2/$f
-		  if [ ! -z "$f" ]; then
+		  if ! [[ "$f" = "\"\"" ]]; then
+			  f="${f%\"}"
+			  f="${f#\"}"
+			  f=../$2/$f
 		  	  FILE=$(basename $f)
 			  echo "    unlinking: $FILE"
 		  	  sudo rm $TARGET$FILE
@@ -140,47 +195,6 @@ elif [ $1 = "reload" ]; then
 	  python configure.py --mode reload --api $INTERFACE --filename $FILE
 	done	
 
-elif [ $1 = "clean" ]; then
-	if [ -z $2 ]; then
-		echo "Cleaning bedrock..."
-		sudo rm analytics/opals/*.pyc 	
-		sudo rm analytics/*.pyc 	
-
-		sudo rm dataloader/opals/*.pyc 	
-		sudo rm dataloader/*.pyc 	
-
-		sudo rm *.pyc 	
-
-
-
-	else
-		echo "Cleaning $2..."
-		sudo rm $2/opals/*.pyc 	
-		sudo rm $2/*.pyc 	
-
-	fi
-
-elif [ $1 = "list" ]; then
-
-	if [ $2 = "installed" ]; then
-		cat installed_opals.txt
-
-	else
-		echo "Available opals:"
-		jq 'keys' ../bedrock-opalserver/master_conf.json
-	fi
-
-
-elif [ $1 = "-h" ]; then
-	echo "Use this script to install, remove, or reload opals or to install and remove applications:"
-	echo ""
-	echo "    ./opal.sh install [name of opal to be installed]"
-	echo "    ./opal.sh remove [name of opal to be removed]"
-	echo "    ./opal.sh reload [name of opal to be reloaded]"
-	echo ""
-	echo "    ./opal.sh install application [filepath for application json specification]"
-	echo "    ./opal.sh remove application [filepath for application json specification]"
-	echo ""
 else
     echo "Sorry, there is no script for that option"
 fi
