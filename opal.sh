@@ -1,13 +1,19 @@
+OPALSERVER=192.168.33.101:83/opalserver/api/0.1/opals/
+JSON=$(sudo curl --silent $OPALSERVER)
+
+if [ -z "$BEDROCK_DIR" ]; then
+	BEDROCK_DIR=~/bedrock/
+fi 
 
 if [ $1 = "-h" ]; then
 	echo "Use this script to install, remove, or reload opals or to install and remove applications:"
 	echo ""
-	echo "    ./opal.sh install [name of opal to be installed]"
-	echo "    ./opal.sh remove [name of opal to be removed]"
-	echo "    ./opal.sh reload [name of opal to be reloaded]"
+	echo "    opal install [name of opal to be installed]"
+	echo "    opal remove [name of opal to be removed]"
+	echo "    opal reload [name of opal to be reloaded]"
 	echo ""
-	echo "    ./opal.sh install application [filepath for application json specification]"
-	echo "    ./opal.sh remove application [filepath for application json specification]"
+	echo "    opal install application [filepath for application json specification]"
+	echo "    opal remove application [filepath for application json specification]"
 	echo ""
 	exit 0
 
@@ -43,31 +49,35 @@ elif [ $1 = "list" ]; then
 
 	else
 		echo "Available opals:"
-		jq 'keys' ../bedrock-opalserver/master_conf.json
+		curl $OPALSERVER
 	fi
 	exit 0
 
 fi
 
 
-#get metadata
-URL=$(cat ../bedrock-opalserver/master_conf.json | jq '.["'$2'"]'.remote)
-URL="${URL%\"}"
-URL="${URL#\"}"
-SUPPORTS=$(cat ../bedrock-opalserver/master_conf.json | jq '.["'$2'"]'.supports)
-UNITS=$(cat ../bedrock-opalserver/master_conf.json | jq '.["'$2'"]'.units)
-API=$(cat ../bedrock-opalserver/master_conf.json | jq '.["'$2'"]'.api)
+HOST=$(echo $JSON | jq '.["'$2'"]'.host)
+HOST="${HOST%\"}"
+HOST="${HOST#\"}"
+REPO=$(echo $JSON | jq '.["'$2'"]'.repo)
+REPO="${REPO%\"}"
+REPO="${REPO#\"}"
+
+SUPPORTS=$(echo $JSON | jq '.["'$2'"]'.supports)
+UNITS=$(echo $JSON | jq '.["'$2'"]'.units)
+API=$(echo $JSON | jq '.["'$2'"]'.api)
 API="${API%\"}"
 API="${API#\"}"
-INTERFACE=$(cat ../bedrock-opalserver/master_conf.json | jq '.["'$2'"]'.interface)
+INTERFACE=$(echo $JSON | jq '.["'$2'"]'.interface)
 INTERFACE="${INTERFACE%\"}"
 INTERFACE="${INTERFACE#\"}"
 
+SCRIPT=$(echo $JSON | jq '.["'$2'"]'.installation_script)
+
+SYSTEM=$(echo $JSON | jq '.["'$2'"]'.system_dependencies)
+
 TARGET=/var/www/bedrock/$API/opals/
-if [ "$URL" = null ]; then
-	echo "ERROR: No opal by that name."
-	exit 0
-fi 
+
 
 
 if [ $1 = "install" ]; then
@@ -87,24 +97,55 @@ if [ $1 = "install" ]; then
 
 	else
 
+		if [ "$URL" = null ]; then
+			echo "ERROR: No opal by that name."
+			exit 0
+		fi 
 		echo "Installing $2..."
-		if [ ! -d "../$2" ]; then
-			git clone $URL ../$2
+		if [ ! -d "$BEDROCK_DIR/$2" ]; then
+			git clone -b master --single-branch git@$HOST:$REPO $BEDROCK_DIR/$2
+			if [ $? -ne 0 ]  # revert to HTTPS if keys not present
+			then
+			  git clone -b master --single-branch https://$HOST/$REPO $BEDROCK_DIR/$2
+			fi
 		fi
 
 		#check python dependencies
 
 		#check system dependencies
+		for f in $SYSTEM
+		do
+		  if ! [ "$f" = "\"\"" ]; then
+			f="${f%\"}"
+			f="${f#\"}"
+			dpkg-query -l $f | echo
+			if [[ "$?" = 1 ]]; then
+				echo "Installing $f..."
+				sudo apt-get install $f
+			fi
+		  fi
+		done	
 
+		
 		#execute any necessary additional installation scripts
+		for f in $SCRIPT
+		do
+		  if ! [ "$f" = "\"\"" ]; then
+			f="${f%\"}"
+			f="${f#\"}"
+			cd $BEDROCK_DIR/$2
+			./$f
+			cd $BEDROCK_DIR/bedrock-core
+		  fi
+		done	
 
 		#iterate through the supports and symlink
 		for f in $SUPPORTS
 		do
-		  if ! [[ "$f" = "\"\"" ]]; then
+		  if ! [ "$f" = "\"\"" ]; then
 			f="${f%\"}"
 			f="${f#\"}"
-			f=../$2/$f
+			f=$BEDROCK_DIR/$2/$f
 			MY_PATH=$(readlink -f $f)
 			echo "    linking: $MY_PATH"
 			sudo ln -s $MY_PATH $TARGET
@@ -116,7 +157,7 @@ if [ $1 = "install" ]; then
 		do
 		  f="${f%\"}"
 		  f="${f#\"}"
-		  f=../$2/$f
+		  f=$BEDROCK_DIR/$2/$f
 		  MY_PATH=$(readlink -f $f)
 		  FILE=$(basename $f)
 		  echo "    linking: $MY_PATH"
@@ -147,16 +188,20 @@ elif [ $1 = "remove" ]; then
 
 	else
 
+		if [ "$URL" = null ]; then
+			echo "ERROR: No opal by that name."
+			exit 0
+		fi 
 		echo "Removing $2..."
 		
 		#iterate through the supports and symlink
 
 		for f in $SUPPORTS
 		do
-		  if ! [[ "$f" = "\"\"" ]]; then
+		  if ! [ "$f" = "\"\"" ]; then
 			  f="${f%\"}"
 			  f="${f#\"}"
-			  f=../$2/$f
+			  f=$BEDROCK_DIR/$2/$f
 		  	  FILE=$(basename $f)
 			  echo "    unlinking: $FILE"
 		  	  sudo rm $TARGET$FILE
@@ -168,7 +213,7 @@ elif [ $1 = "remove" ]; then
 		do
 		  f="${f%\"}"
 		  f="${f#\"}"
-		  f=../$2/$f
+		  f=$BEDROCK_DIR/$2/$f
 		  MY_PATH=$(readlink -f $f)
 		  FILE=$(basename $f)
 		  echo "    unlinking: $MY_PATH"
@@ -183,6 +228,10 @@ elif [ $1 = "remove" ]; then
 
 
 elif [ $1 = "reload" ]; then
+	if [ "$URL" = null ]; then
+		echo "ERROR: No opal by that name."
+		exit 0
+	fi 
 	echo "Reloading $2..."
 
 	#iterate through the units and symlink/install
@@ -190,7 +239,7 @@ elif [ $1 = "reload" ]; then
 	do
 	  f="${f%\"}"
 	  f="${f#\"}"
-	  f=../$2/$f
+	  f=$BEDROCK_DIR/$2/$f
 	  FILE=$(basename $f)
 	  python configure.py --mode reload --api $INTERFACE --filename $FILE
 	done	

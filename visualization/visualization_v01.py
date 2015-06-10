@@ -19,7 +19,7 @@ import pymongo, sys, json, os, socket, shutil, string, re
 from flask.ext import restful
 from flask.ext.restplus import Api, Resource, fields
 import utils
-from VISUALIZATION_CONSTANTS import *
+from CONSTANTS import *
 
 app = Flask(__name__)
 app.debug = True

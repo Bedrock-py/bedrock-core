@@ -1,2 +1,7 @@
 .DS_Store
 *.pyc
+analytics/opals/*
+analytics/data/*
+dataloader/opals/*
+dataloader/data/*
+visualization/opals/*

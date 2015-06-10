@@ -23,7 +23,8 @@ from flask.ext.restplus import Api, Resource, fields
 from datetime import datetime
 import subprocess
 from multiprocessing import Process, Queue
-from ANALYTICS_CONSTANTS import *
+# from ANALYTICS_CONSTANTS import *
+from CONSTANTS import *
 
 ALLOWED_EXTENSIONS = ['py']
 

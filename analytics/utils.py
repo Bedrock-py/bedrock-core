@@ -20,6 +20,7 @@ import csv
 from datetime import datetime
 import pandas as pd
 import uuid
+from CONSTANTS import *
 
 def getNewId():
 	return uuid.uuid4().hex
@@ -223,7 +224,7 @@ def write_analytic(text, classname):
     analytic_id = classname 
     # + str(time.year) + str(time.month) + str(time.day) + str(time.hour) + str(time.minute) + str(time.second)
 
-    with open(ALGDIR + analytic_id + '.py', 'w') as alg:
+    with open(ANALYTICS_OPALS + analytic_id + '.py', 'w') as alg:
         alg.write(text)
 
     #get the metadata from the file
@@ -231,7 +232,7 @@ def write_analytic(text, classname):
     metadata['analytic_id'] = analytic_id
 
     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-    col = client[MONGO_DB_NAME][ANALYTCS]
+    col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
 
     col.insert(metadata)
 

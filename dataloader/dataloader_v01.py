@@ -25,7 +25,7 @@ from werkzeug import secure_filename
 from bson.objectid import ObjectId
 import requests
 import urllib2
-from DATALOADER_CONSTANTS import *
+from CONSTANTS import *
 
 app = Flask(__name__)
 app.debug = True

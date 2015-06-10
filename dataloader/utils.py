@@ -33,17 +33,35 @@ def initialize(filter, parameters):
         setattr(filter, each['attrname'], each['value'])
 
 def get_metadata(id, api=None):
-    exec("import opals." + id)
-    filename = "opals." + id
-    classname = filename.split(".")[-1]
-    objectname = "opals." + id + '.' + classname
-    mod = eval(objectname)() #create the object specified
-    metadata = {}
-    metadata['name'] = mod.get_name()
-    metadata['classname'] = classname
-    metadata['description'] = mod.get_description()
-    metadata['parameters'] = mod.get_parameters_spec()
-    # metadata['inputs'] = mod.get_inputs()
+    if api == 'ingest':
+        exec("import opals." + id)
+        filename = "opals." + id
+        classname = filename.split(".")[-1]
+        objectname = "opals." + id + '.' + classname
+        mod = eval(objectname)() #create the object specified
+        metadata = {}
+        metadata['name'] = mod.get_name()
+        metadata['classname'] = classname
+        metadata['description'] = mod.get_description()
+        metadata['parameters'] = mod.get_parameters_spec()
+        # metadata['inputs'] = mod.get_inputs()
+    elif api == 'filters':
+        exec("import opals." + id)
+        filename = "opals." + id
+        classname = filename.split(".")[-1]
+        objectname = "opals." + id + '.' + classname
+        filt = eval(objectname)() #create the object specified
+        metadata = {}
+        metadata['name'] = filt.get_name()
+        metadata['type'] = filt.get_type()
+        metadata['stage'] = filt.get_stage()
+        metadata['input'] = filt.get_input()
+        metadata['ouptuts'] = filt.get_outputs()
+        metadata['possible_names'] = filt.get_possible_names()
+        metadata['classname'] = classname
+        metadata['description'] = filt.get_description()
+        metadata['parameters'] = filt.get_parameters_spec()
+
     return metadata
 
 
@@ -160,18 +178,18 @@ def setUpDirectoryMatrix(src_id):
     return rootpath, dirName
     
 def check(filter_id, name, col):
-    exec("import filters.opals." + filter_id)
-    filename = "filters.opals." + filter_id
+    exec("import opals." + filter_id)
+    filename = "opals." + filter_id
     classname = filename.split(".")[-1]
-    objectname = "filters.opals." + filter_id + '.' + classname
+    objectname = "opals." + filter_id + '.' + classname
     filt = eval(objectname)() #create the object specified
     return filt.check(name, col)
 
 def apply(filter_id, parameters, col):
-    exec("import filters.opals." + filter_id)
-    filename = "filters.opals." + filter_id
+    exec("import opals." + filter_id)
+    filename = "opals." + filter_id
     classname = filename.split(".")[-1]
-    objectname = "filters.opals." + filter_id + '.' + classname
+    objectname = "opals." + filter_id + '.' + classname
     filt = eval(objectname)() #create the object specified
     initialize(filt, parameters)
     return filt.apply(col)
