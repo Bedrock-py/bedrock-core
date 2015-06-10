@@ -1,4 +1,9 @@
-OPALSERVER=192.168.33.101:83/opalserver/api/0.1/opals/
+dpkg-query -l jq | echo
+if [[ "$?" = 1 ]]; then
+	sudo apt-get install jq
+fi
+
+OPALSERVER=130.207.211.77/opalserver/api/0.1/opals/
 JSON=$(sudo curl --silent $OPALSERVER)
 
 if [ -z "$BEDROCK_DIR" ]; then
