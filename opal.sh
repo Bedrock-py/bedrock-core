@@ -28,12 +28,15 @@ elif [ $1 = "clean" ]; then
 
 		sudo rm analytics/opals/*.pyc 2>/dev/null
 		sudo rm analytics/*.pyc 2>/dev/null
+		touch analytics/opals/__init__.py
 
 		sudo rm dataloader/opals/*.pyc 2>/dev/null
 		sudo rm dataloader/*.pyc 2>/dev/null
+		touch dataloader/opals/__init__.py
 
 		sudo rm visualization/opals/*.pyc 2>/dev/null
 		sudo rm visualization/*.pyc 2>/dev/null
+		touch visualization/opals/__init__.py
 
 		sudo rm *.pyc 2>/dev/null
 
