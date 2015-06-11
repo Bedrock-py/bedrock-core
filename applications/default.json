@@ -11,6 +11,6 @@
 				opal-visualization-piechart 
 				opal-visualization-scatterplot 
 				opal-visualization-topterms 
-				opal-visualization-wordclouds
+				opal-visualization-wordclouds 
 				opal-dataloader-filter-truth"
 }

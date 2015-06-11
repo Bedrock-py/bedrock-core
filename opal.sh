@@ -111,10 +111,10 @@ if [ $1 = "install" ]; then
 		fi 
 		echo "Installing $2..."
 		if [ ! -d "$BEDROCK_DIR/$2" ]; then
-			git clone -b master --single-branch git@$HOST:$REPO $BEDROCK_DIR/$2
+			git clone -b master --single-branch git@$HOST:$REPO $BEDROCK_DIR$2
 			if [ $? -ne 0 ]  # revert to HTTPS if keys not present
 			then
-			  git clone -b master --single-branch https://$HOST/$REPO $BEDROCK_DIR/$2
+			  git clone -b master --single-branch https://$HOST/$REPO $BEDROCK_DIR$2
 			fi
 		fi
 
