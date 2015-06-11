@@ -22,6 +22,36 @@ if [ $1 = "-h" ]; then
 	echo ""
 	exit 0
 
+elif [ $1 = "reset" ]; then
+        if [ -z $2 ]; then
+                echo "Resetting bedrock..."
+
+                sudo rm analytics/opals/*.py* 2>/dev/null
+                sudo rm analytics/*.pyc 2>/dev/null
+		touch analytics/opals/__init__.py
+
+
+                sudo rm dataloader/opals/*.py* 2>/dev/null
+                sudo rm dataloader/*.pyc 2>/dev/null
+		touch dataloader/opals/__init__.py
+
+                sudo rm visualization/opals/*.py* 2>/dev/null
+                sudo rm visualization/*.pyc 2>/dev/null
+		touch visualization/opals/__init__.py
+
+                sudo rm *.pyc 2>/dev/null
+
+		sudo rm -r analytics/data/*
+		sudo rm -r dataloader/data/*
+
+		truncate -s 0 installed_opals.txt
+
+		mongo dataloader --eval "db.dropDatabase();"
+		mongo analytics  --eval "db.dropDatabase();"
+		mongo visualization --eval "db.dropDatabase();"
+        fi
+        exit 0
+
 elif [ $1 = "clean" ]; then
 	if [ -z $2 ]; then
 		echo "Cleaning bedrock..."
@@ -151,9 +181,12 @@ if [ $1 = "install" ]; then
 			f="${f%\"}"
 			f="${f#\"}"
 			f=$BEDROCK_DIR/$2/$f
+			FILE=$(basename $f)
 			MY_PATH=$(readlink -f $f)
-			echo "    linking: $MY_PATH"
-			sudo ln -s $MY_PATH $TARGET
+                        if [ ! -L $TARGET$FILE ]; then
+			    echo "    linking: $MY_PATH"
+			    sudo ln -s $MY_PATH $TARGET
+   			fi
 		  fi
 		done	
 
@@ -165,8 +198,10 @@ if [ $1 = "install" ]; then
 		  f=$BEDROCK_DIR/$2/$f
 		  MY_PATH=$(readlink -f $f)
 		  FILE=$(basename $f)
-		  echo "    linking: $MY_PATH"
-		  sudo ln -s $MY_PATH $TARGET
+                  if [ ! -L $TARGET$FILE ]; then
+                      echo "    linking: $MY_PATH"
+                      sudo ln -s $MY_PATH $TARGET
+                  fi
 		  python configure.py --mode add --api $INTERFACE --filename $FILE
 		done	
 
@@ -180,7 +215,7 @@ if [ $1 = "install" ]; then
 elif [ $1 = "remove" ]; then
 	if [ $2 = "application" ]; then
 
-		echo "Installing application $3..."
+		echo "Removing application $3..."
 		OPALS=$(cat $3 | jq .opals)
 
 		for o in $OPALS
