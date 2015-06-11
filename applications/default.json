@@ -12,5 +12,6 @@
 				opal-visualization-scatterplot 
 				opal-visualization-topterms 
 				opal-visualization-wordclouds 
-				opal-dataloader-filter-truth"
+				opal-dataloader-filter-truth 
+				opal-analytics-smallk"
 }
