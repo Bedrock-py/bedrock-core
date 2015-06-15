@@ -11,11 +11,12 @@ if [ -z "$BEDROCK_DIR" ]; then
 fi 
 
 if [ $1 = "-h" ]; then
-	echo "Use this script to install, remove, or reload opals or to install and remove applications:"
+	echo "Use this script to install, remove, reload, or validate opals or to install and remove applications:"
 	echo ""
 	echo "    opal install [name of opal to be installed]"
 	echo "    opal remove [name of opal to be removed]"
 	echo "    opal reload [name of opal to be reloaded]"
+	echo "		opal validate [name of opal to be validated]"
 	echo ""
 	echo "    opal install application [filepath for application json specification]"
 	echo "    opal remove application [filepath for application json specification]"
@@ -287,6 +288,22 @@ elif [ $1 = "reload" ]; then
 	  python configure.py --mode reload --api $INTERFACE --filename $FILE
 	done	
 
+elif [ $1 = "validate" ]; then
+	if [ $2 = "-h" ]; then
+		echo "Validate must take in 4 agrugments."
+		echo ""
+		echo "Argument 1 must be the API that where the file will be insterted."
+		echo "Argument 2 must be the absolute path to the file."
+		echo "Argument 3 must be the absolute path to any input files needed for the file or NA if the file does not take any inputs."
+		echo "Argument 4 must be the absolute path for the placement of any output files or NA if the file does not produce an output file."
+		echo ""
+		exit 0
+	elif [ "$#" -ne 5 ]; then
+		echo "ERROR: validate must take 4 arguments exactly."
+		exit 0
+	else
+		python /home/vagrant/bedrock/bedrock-core/validation/validationScript.py --api "$2" --filename "$3" --input_directory "$4" --output_directory "$5"
+	fi
 else
     echo "Sorry, there is no script for that option"
 fi

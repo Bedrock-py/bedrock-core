@@ -1,0 +1,101 @@
+{
+    "doc_count": 252,
+    "nodes": [
+        {
+            "id": 0,
+            "doc_count": 39,
+            "top_terms": [
+                "first",
+                "call",
+                "demand",
+                "precinct",
+                "amendment",
+                "rights",
+                "212-334-0611",
+                "#nypd",
+                "646-610-5000",
+                "@7754495377420919101"
+            ]
+        },
+        {
+            "id": 1,
+            "doc_count": 30,
+            "top_terms": [
+                "block",
+                "media",
+                "allow",
+                "people",
+                "access",
+                "@7526888406962725238",
+                "#zuccottipark",
+                "entrance",
+                "#occupywallstreet",
+                "all"
+            ]
+        },
+        {
+            "id": 2,
+            "doc_count": 87,
+            "top_terms": [
+                "raid",
+                "zuccotti",
+                "park",
+                "livestream",
+                "watch",
+                "street",
+                "live",
+                "wall",
+                "police",
+                "occupy"
+            ]
+        },
+        {
+            "id": 3,
+            "doc_count": 25,
+            "top_terms": [
+                "down",
+                "shut",
+                "subway",
+                "bridge",
+                "closed",
+                "lower",
+                "manhattan",
+                "press",
+                "allow",
+                "train"
+            ]
+        },
+        {
+            "id": 4,
+            "doc_count": 37,
+            "top_terms": [
+                "peaceful",
+                "protest",
+                "lrad",
+                "@5463902932973508145",
+                "#occupywallstreet",
+                "cop",
+                "police",
+                "acoustic",
+                "shit",
+                "ask"
+            ]
+        },
+        {
+            "id": 5,
+            "doc_count": 34,
+            "top_terms": [
+                "tent",
+                "all",
+                "destroy",
+                "park",
+                "throw",
+                "police",
+                "just",
+                "stuff",
+                "#occupywallstreet",
+                "liberty"
+            ]
+        }
+    ]
+}
