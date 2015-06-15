@@ -101,7 +101,7 @@ def compare_fuctions(fileToCheck, desiredInterface):
 		else:
 			return ""
 	elif desiredInterface == 4:
-		if " get_classname()" not in fList or " __init__(self)" not in fList or (" check(self, name, sample)" not in fList and " check(self, name, col)" not in fList) or " apply(self, conf)" not in fList:
+		if " __init__(self)" not in fList or (" check(self, name, sample)" not in fList and " check(self, name, col)" not in fList) or " apply(self, conf)" not in fList:
 			return "Function/s and/or specific input/s missing in this file.\n"
 		else:
 			return ""
@@ -110,7 +110,9 @@ def inheritance_check(fileToCheck, desiredInterface):
 	class_name_list = find_class(fileToCheck, desiredInterface)
 	inhertiance_name = ""
 	if (len(class_name_list) > 0):
-		if (len(class_name_list) > 1):
+		if (desiredInterface == 1 and len(class_name_list) > 1):
+			inhertiance_name = class_name_list[0]
+		elif (len(class_name_list) > 1):
 			inhertiance_name = class_name_list[len(class_name_list) - 1]
 		else:
 			inhertiance_name = class_name_list[0]
@@ -125,12 +127,12 @@ def inheritance_check(fileToCheck, desiredInterface):
 				return ""
 		elif desiredInterface == 2:
 			if inhertiance_name != "Visualization":
-				return "Class must inherit from the VisBase super class.\n"
+				return "Class must inherit from the Visualization super class.\n"
 			else:
 				return ""
 		elif desiredInterface == 3:
-			if inhertiance_name != "IngestM":
-				return "Class must inherit from the IngestModule super class.\n"
+			if inhertiance_name != "Ingest":
+				return "Class must inherit from the Ingest super class.\n"
 			else:
 				return ""
 		elif desiredInterface == 4:
@@ -145,7 +147,9 @@ def validate_file_name(fileToCheck, desiredInterface):
 	class_name_list = find_class(fileToCheck, desiredInterface)
 	class_name = ""
 	if (len(class_name_list) > 0):
-		if (len(class_name_list) > 1):
+		if (desiredInterface == 1 and len(class_name_list) > 1):
+			class_name = class_name_list[0]
+		elif (len(class_name_list) > 1):
 			class_name = class_name_list[len(class_name_list) - 1]
 		else:
 			class_name = class_name_list[0]
@@ -153,20 +157,19 @@ def validate_file_name(fileToCheck, desiredInterface):
 		class_name = class_name[:trim]
 		returnsList = list_returns(fileToCheck, desiredInterface)
 
-		superStament = ""
-		if desiredInterface == 1 or desiredInterface == 2 or desiredInterface == 3 or desiredInterface == 4:
-			with open(fileToCheck, 'r') as pyFile:
-				for line in pyFile:
-					newFront = line.find("super")
-					if newFront != -1:
-						trimFront = line.find("(")
-						trimBack = line.find(",")
-						line = line[trimFront + 1: trimBack]
-						superStament = line
-			if class_name != superStament:
-				return "File name does not match Class name\n"
-			else:
-				return ""
+		superStament = []
+		with open(fileToCheck, 'r') as pyFile:
+			for line in pyFile:
+				newFront = line.find("super")
+				if newFront != -1:
+					trimFront = line.find("(")
+					trimBack = line.find(",")
+					line = line[trimFront + 1: trimBack]
+					superStament.append(line)
+		if class_name not in superStament:
+			return "File name does not match Class name\n"
+		else:
+			return ""
 
 	# 	found = False
 	# 	i = 0
@@ -238,7 +241,7 @@ def check_return_values(fileToCheck, desiredInterface):
 		else:
 			return ""
 	elif desiredInterface == 4:
-		if listOfClasses[0] not in listOfReturns or ("True" not in listOfReturns and "False" not in listOfReturns) or ("matrix" not in listOfReturns and "None" not in listOfReturns):
+		if ("True" not in listOfReturns and "False" not in listOfReturns) or ("matrix" not in listOfReturns and "None" not in listOfReturns):
 			return "Missing or incorrectly named return values"
 		else:
 			return ""
@@ -373,7 +376,7 @@ elif args.api.lower() == "visualization":
 	desiredInterface = 2
 elif args.api.lower() == "ingest":
 	desiredInterface = 3
-elif args.api.lower() == "filters":
+elif args.api.lower() == "filter":
 	desiredInterface = 4
 
 my_dir = args.input_directory
