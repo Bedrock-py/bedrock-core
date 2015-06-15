@@ -3,8 +3,8 @@ if [[ "$?" = 1 ]]; then
 	sudo apt-get install jq
 fi
 
-OPALSERVER=130.207.211.77/opalserver/api/0.1/opals/
-JSON=$(sudo curl --silent $OPALSERVER)
+OPALSERVER=130.207.211.77/opalserver/api/0.1/
+OPALS=$(sudo curl --silent $OPALSERVER/opals)
 
 if [ -z "$BEDROCK_DIR" ]; then
 	BEDROCK_DIR=~/bedrock/
@@ -94,25 +94,25 @@ elif [ $1 = "list" ]; then
 fi
 
 
-HOST=$(echo $JSON | jq '.["'$2'"]'.host)
+HOST=$(echo $OPALS | jq '.["'$2'"]'.host)
 HOST="${HOST%\"}"
 HOST="${HOST#\"}"
-REPO=$(echo $JSON | jq '.["'$2'"]'.repo)
+REPO=$(echo $OPALS | jq '.["'$2'"]'.repo)
 REPO="${REPO%\"}"
 REPO="${REPO#\"}"
 
-SUPPORTS=$(echo $JSON | jq '.["'$2'"]'.supports)
-UNITS=$(echo $JSON | jq '.["'$2'"]'.units)
-API=$(echo $JSON | jq '.["'$2'"]'.api)
+SUPPORTS=$(echo $OPALS | jq '.["'$2'"]'.supports)
+UNITS=$(echo $OPALS | jq '.["'$2'"]'.units)
+API=$(echo $OPALS | jq '.["'$2'"]'.api)
 API="${API%\"}"
 API="${API#\"}"
-INTERFACE=$(echo $JSON | jq '.["'$2'"]'.interface)
+INTERFACE=$(echo $OPALS | jq '.["'$2'"]'.interface)
 INTERFACE="${INTERFACE%\"}"
 INTERFACE="${INTERFACE#\"}"
 
-SCRIPT=$(echo $JSON | jq '.["'$2'"]'.installation_script)
+SCRIPT=$(echo $OPALS | jq '.["'$2'"]'.installation_script)
 
-SYSTEM=$(echo $JSON | jq '.["'$2'"]'.system_dependencies)
+SYSTEM=$(echo $OPALS | jq '.["'$2'"]'.system_dependencies)
 
 TARGET=/var/www/bedrock/$API/opals/
 
