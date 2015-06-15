@@ -13,5 +13,6 @@
 				opal-visualization-topterms 
 				opal-visualization-wordclouds 
 				opal-dataloader-filter-truth 
-				opal-analytics-smallk"
+				opal-analytics-smallk",
+	"dashboard": "dashboard-diamondeye"
 }
