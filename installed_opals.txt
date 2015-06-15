@@ -17,3 +17,16 @@ opal-analytics-smallk
 opal-visualization-topterms
 opal-dataloader-filter-truth
 opal-dataloader-filter-truth
+opal-analytics-rtc
+opal-analytics-qualitymeasures
+opal-analytics-pca-regression
+opal-visualization-barchart
+opal-visualization-heatmap
+opal-visualization-linechart-peakuse
+opal-visualization-popular
+opal-visualization-sentiment-topics
+opal-visualization-top-links
+opal-visualization-top-news
+opal-visualization-topics-trends
+opal-visualization-twitter-followers
+opal-analytics-smallk
