@@ -4,15 +4,12 @@ import fnmatch
 import os
 import shutil
 import sys
-sys.path.insert(1, '/var/www/analytics-framework/dataloader/python/')
-sys.path.insert(1, '/var/www/analytics-framework/analytics/python/')
-sys.path.insert(1, '/var/www/analytics-framework/visualization/python/')
-sys.path.insert(1, '/var/www/analytics-framework/workflows/python/')
 
-import DataLoader.ingest_utils
-import DataLoader.filter_utils
-import Analytics.analytics
-import Visualization.visualization
+sys.path.insert(1, '/var/www/bedrock/')
+
+import analytics.utils
+import dataloader.utils
+import visualization.utils
 from multiprocessing import Queue
 
 def find_imports(fileToCheck, desiredInterface):
@@ -252,13 +249,13 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 	lastOccurence = fileToCheck.rfind("/")
 	file_name = fileToCheck[lastOccurence + 1:len(fileToCheck) - 3]
 	if desiredInterface == 1:
-		file_metaData = Analytics.analytics.get_metadata(file_name)
+		file_metaData = analytics.utils.get_metadata(file_name)
 	elif desiredInterface == 2:
-		file_metaData = Visualization.visualization.get_metadata(file_name)
+		file_metaData = visualization.utils.get_metadata(file_name)
 	elif desiredInterface == 3:
-		file_metaData = DataLoader.ingest_utils.get_metadata(file_name)
+		file_metaData = dataloader.utils.get_metadata(file_name)
 	elif desiredInterface == 4:
-		file_metaData = DataLoader.filter_utils.get_metadata(file_name)
+		file_metaData = dataloader.utils.get_metadata(file_name)
 	inputList = []
 	if desiredInterface != 3 and desiredInterface != 4:
 		for elem in file_metaData['inputs']:
@@ -266,8 +263,8 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		inputDict = create_input_dict(my_dir, inputList)
 	if desiredInterface == 1:
 		count = 0
-		computeResult = Analytics.analytics.run_analysis(queue, file_name, file_metaData['parameters'], inputDict, output_directory, "Result")
-		
+		computeResult = analytics.utils.run_analysis(queue, file_name, file_metaData['parameters'], inputDict, output_directory, "Result")
+
 		for file in os.listdir(my_dir):
 			if fnmatch.fnmatch(file, "*.csv") or fnmatch.fnmatch(file, ".json"):
 				count += 1
@@ -276,7 +273,7 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		for file_name in os.listdir(output_directory):
 			os.remove(os.path.join(output_directory, file_name))
 	elif desiredInterface == 2:
-		createResult = Visualization.visualization.generate_vis(file_name, inputDict, file_metaData['parameters'])
+		createResult = visualization.utils.generate_vis(file_name, inputDict, file_metaData['parameters'])
 		if (type(createResult) != dict):
 			specificErrorMessage += "Missing a dict return, create function must return a dict item."
 	elif desiredInterface == 3:
@@ -295,12 +292,12 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 			"ingest_id": "Spreadsheet",
 			"matrices": [],
 			"name": "iris",
-			"rootdir": "/var/www/analytics-framework/validation/caa1a3105a22477f8f9b4a3124cd41b6/",
+			"rootdir": "/home/vagrant/bedrock/bedrock-core/validation/caa1a3105a22477f8f9b4a3124cd41b6/",
 			"src_id": "caa1a3105a22477f8f9b4a3124cd41b6",
 			"src_type": "file"
 		}
 
-		exploreResult = DataLoader.ingest_utils.explore(file_name, my_dir, [])
+		exploreResult = dataloader.utils.explore(file_name, my_dir, [])
 		exploreResultList = list(exploreResult)
 		typeListExplore = []
 
@@ -330,11 +327,11 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		# elif bool not in typeListIngest and list not in typeListIngest:
 		# 	specificErrorMessage += " Missing a boolean value and list, ingest function must return both a boolean and a list."
 	elif desiredInterface == 4:
-		checkResult = DataLoader.filter_utils.check(file_name, file_metaData['name'], [])
+		checkResult = dataloader.utils.check(file_name, file_metaData['name'], [])
 		if type(checkResult) != bool:
 			specificErrorMessage += "Missing boolean value, check funtion must return a boolean value"
-		
-		applyResult = DataLoader.filter_utils.apply(file_name, file_metaData['parameters'], [])
+
+		applyResult = dataloader.utils.apply(file_name, file_metaData['parameters'], [])
 		if type(applyResult) != dict:
 			specificErrorMessage += " Missing a dict object, apply function must return a dict object."
 	return specificErrorMessage
@@ -346,7 +343,7 @@ def create_input_dict(my_dir, inputList):
 	length = len(inputList)
 	for file in os.listdir(my_dir):
 		if file in inputList:
-			if length == 1 or (length > 1 and file != inputList[length - 1]) or (length > 1 and inputList[i] != inputList[i + 1]): 
+			if length == 1 or (length > 1 and file != inputList[length - 1]) or (length > 1 and inputList[i] != inputList[i + 1]):
 				returnDict.update({file:{'rootdir':my_dir}})
 			elif length > 1 and inputList[i] == inputList[i + 1]:
 				firstNewFile = file + "_" + str(j)
@@ -359,24 +356,6 @@ def create_input_dict(my_dir, inputList):
 			i += 1
 			length -= 1
 	return returnDict
-
-# def compare_to_master_config(fileToCheck, desiredInterface):
-# 	importedList = []
-# 	asterikFound = False
-# 	with open(fileToCheck, 'r') as pyFile:
-# 		for line in pyFile:
-# 			newFront = line.find("import")
-# 			if newFront != -1:
-# 				line = line[newFront + 7:]
-# 				line.split()
-# 				if line.find("*") != -1 and len(line) == 2:
-# 					importedList.extend(line)
-# 				if line.find("*") != -1:
-# 					asterikFound = True
-# 				line =[word.strip(punctuation) for word in line.split()]
-# 				importedList.extend(line)
-# 	return importedList
-
 
 parser = argparse.ArgumentParser(description="Validate files being added to system.")
 parser.add_argument('--api', help="The API where the file is trying to be inserted.", action='store', required=True, metavar='api')
@@ -413,4 +392,3 @@ else:
 	print(errorMessage)
 
 print(hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directory))
-# print(compare_to_master_config(fileToCheck, desiredInterface))

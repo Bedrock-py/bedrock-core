@@ -4,7 +4,7 @@ if [[ "$?" = 1 ]]; then
 fi
 
 OPALSERVER=130.207.211.77/opalserver/api/0.1/
-OPALS=$(sudo curl --silent $OPALSERVER/opals/)
+OPALS=$(sudo curl --silent $OPALSERVER/opals/) #returns all the JSON objects, what it in the master_conf.json
 
 if [ -z "$BEDROCK_DIR" ]; then
 	BEDROCK_DIR=~/bedrock/
@@ -94,11 +94,12 @@ elif [ $1 = "list" ]; then
 
 fi
 
-
-HOST=$(echo $OPALS | jq '.["'$2'"]'.host)
+#getting the metadata from the master_conf.json
+#jq is a json parser for shell scripting
+HOST=$(echo $OPALS | jq '.["'$2'"]'.host) #gets the host information
 HOST="${HOST%\"}"
 HOST="${HOST#\"}"
-REPO=$(echo $OPALS | jq '.["'$2'"]'.repo)
+REPO=$(echo $OPALS | jq '.["'$2'"]'.repo) #gets the repo information
 REPO="${REPO%\"}"
 REPO="${REPO#\"}"
 
@@ -291,22 +292,34 @@ elif [ $1 = "reload" ]; then
 	done	
 
 elif [ $1 = "validate" ]; then
+	echo "$HOST"
+	echo "$REPO"
+	echo "$SUPPORTS"
+	echo "$INTERFACE"
+	echo "$API"
 	if [ $2 = "-h" ]; then
-		echo "Validate must take in 4 agrugments."
+		echo "Validate must take in 3 agrugments."
 		echo ""
 		echo "Argument 1 must be the API that where the file will be insterted."
 		echo "Argument 2 must be the absolute path to the file."
 		echo "Argument 3 must be the absolute path to any input files needed for the file or NA if the file does not take any inputs."
-		echo "Argument 4 must be the absolute path for the placement of any output files or NA if the file does not produce an output file."
 		echo ""
 		exit 0
-	elif [ "$#" -ne 5 ]; then
+	elif [ "$#" -ne 4 ]; then
 		echo "ERROR: validate must take 4 arguments exactly."
 		exit 0
 	else
-		python /home/vagrant/bedrock/bedrock-core/validation/validationScript.py --api "$2" --filename "$3" --input_directory "$4" --output_directory "$5"
+		python /home/vagrant/bedrock/bedrock-core/validation/validationScript.py --api "$2" --filename "$3" --input_directory "$4" --output_directory "/home/vagrant/bedrock/bedrock-core/validation/OutputStorage/"
+		#made the last input hard coded because any file that is created is type checked then deleted
 	fi
 else
     echo "Sorry, there is no script for that option"
 fi
+
+
+
+
+
+#goal is to be able to do ./opal.sh validate opal-analytics-clustering/Kmeans.py 
+#and eventually be able to switch between using an absolute path if something does not live on the 7th floor
 
