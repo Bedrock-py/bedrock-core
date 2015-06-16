@@ -360,6 +360,24 @@ def create_input_dict(my_dir, inputList):
 			length -= 1
 	return returnDict
 
+# def compare_to_master_config(fileToCheck, desiredInterface):
+# 	importedList = []
+# 	asterikFound = False
+# 	with open(fileToCheck, 'r') as pyFile:
+# 		for line in pyFile:
+# 			newFront = line.find("import")
+# 			if newFront != -1:
+# 				line = line[newFront + 7:]
+# 				line.split()
+# 				if line.find("*") != -1 and len(line) == 2:
+# 					importedList.extend(line)
+# 				if line.find("*") != -1:
+# 					asterikFound = True
+# 				line =[word.strip(punctuation) for word in line.split()]
+# 				importedList.extend(line)
+# 	return importedList
+
+
 parser = argparse.ArgumentParser(description="Validate files being added to system.")
 parser.add_argument('--api', help="The API where the file is trying to be inserted.", action='store', required=True, metavar='api')
 parser.add_argument('--filename', help="Name of file inlcuding entire file path.", action='store', required=True, metavar='filename')
@@ -395,3 +413,4 @@ else:
 	print(errorMessage)
 
 print(hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directory))
+# print(compare_to_master_config(fileToCheck, desiredInterface))
