@@ -19,3 +19,4 @@ sudo mkdir /var/www/bedrock/analytics/data
 sudo chown www-data /var/www/bedrock/analytics/data
 sudo mkdir /var/www/bedrock/dataloader/data
 sudo chown www-data /var/www/bedrock/dataloader/data
+sudo chown www-data /var/www/bedrock/analytics/opals

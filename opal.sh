@@ -4,7 +4,7 @@ if [[ "$?" = 1 ]]; then
 fi
 
 OPALSERVER=130.207.211.77/opalserver/api/0.1/
-OPALS=$(sudo curl --silent $OPALSERVER/opals)
+OPALS=$(sudo curl --silent $OPALSERVER/opals/)
 
 if [ -z "$BEDROCK_DIR" ]; then
 	BEDROCK_DIR=~/bedrock/
@@ -197,6 +197,7 @@ if [ $1 = "install" ]; then
 		#iterate through the units and symlink/install
 		for f in $UNITS
 		do
+		  if ! [ "$f" = "\"\"" ]; then
 		  f="${f%\"}"
 		  f="${f#\"}"
 		  f=$BEDROCK_DIR/$2/$f
@@ -207,6 +208,7 @@ if [ $1 = "install" ]; then
                       sudo ln -s $MY_PATH $TARGET
                   fi
 		  python configure.py --mode add --api $INTERFACE --filename $FILE
+		  fi
 		done	
 
 		echo $2 >> installed_opals.txt
