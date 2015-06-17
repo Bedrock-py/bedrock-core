@@ -292,11 +292,6 @@ elif [ $1 = "reload" ]; then
 	done	
 
 elif [ $1 = "validate" ]; then
-	echo "$HOST"
-	echo "$REPO"
-	echo "$SUPPORTS"
-	echo "$INTERFACE"
-	echo "$API"
 	if [ $2 = "-h" ]; then
 		echo "Validate must take in 3 agrugments."
 		echo ""
