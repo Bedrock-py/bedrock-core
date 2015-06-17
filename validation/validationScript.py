@@ -228,6 +228,8 @@ def check_return_values(fileToCheck, desiredInterface):
 		if len(listOfReturns) > 1:
 			if listOfClasses[0] not in listOfReturns or listOfReturns[1].find("data") == -1 or listOfReturns[1].find("type") == -1 or listOfReturns[1].find("id") == -1:
 				return "Missing or incorrectly named return values.\n"
+			else: 
+				return ""
 		elif listOfReturns[0].find("data") == -1 or listOfReturns[0].find("type") == -1 or listOfReturns[0].find("id") == -1:
 			return "Missing or incorrectly named return values.\n"
 		else:
@@ -253,9 +255,9 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 	elif desiredInterface == 2:
 		file_metaData = visualization.utils.get_metadata(file_name)
 	elif desiredInterface == 3:
-		file_metaData = dataloader.utils.get_metadata(file_name)
+		file_metaData = dataloader.utils.get_metadata(file_name, "ingest")
 	elif desiredInterface == 4:
-		file_metaData = dataloader.utils.get_metadata(file_name)
+		file_metaData = dataloader.utils.get_metadata(file_name, "filters")
 	inputList = []
 	if desiredInterface != 3 and desiredInterface != 4:
 		for elem in file_metaData['inputs']:
@@ -331,7 +333,14 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		if type(checkResult) != bool:
 			specificErrorMessage += "Missing boolean value, check funtion must return a boolean value"
 
-		applyResult = dataloader.utils.apply(file_name, file_metaData['parameters'], [])
+		conf = {
+			'mat_id':'27651d66d4cf4375a75208d3482476ac',
+			'storepath':'/home/vagrant/bedrock/bedrock-core/caa1a3105a22477f8f9b4a3124cd41b6/source/',
+			'src_id':'caa1a3105a22477f8f9b4a3124cd41b6',
+			'name':'iris'
+		}
+
+		applyResult = dataloader.utils.apply(file_name, file_metaData['parameters'], conf)
 		if type(applyResult) != dict:
 			specificErrorMessage += " Missing a dict object, apply function must return a dict object."
 	return specificErrorMessage

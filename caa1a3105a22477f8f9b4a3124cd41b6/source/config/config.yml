@@ -1,0 +1,4 @@
+config_path: /var/www/bedrock/dataloader/opals/config/
+outdir: /home/vagrant/bedrock/bedrock-core/caa1a3105a22477f8f9b4a3124cd41b6/source/index/ 
+analyzer: CUSTOM_FORMAL
+indir: /home/vagrant/bedrock/bedrock-core/caa1a31indir/

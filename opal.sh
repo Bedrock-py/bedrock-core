@@ -301,10 +301,16 @@ elif [ $1 = "validate" ]; then
 		echo ""
 		exit 0
 	elif [ "$#" -ne 4 ]; then
-		echo "ERROR: validate must take 4 arguments exactly."
+		echo "ERROR: validate must take 3 arguments exactly."
 		exit 0
 	else
-		python /home/vagrant/bedrock/bedrock-core/validation/validationScript.py --api "$2" --filename "$3" --input_directory "$4" --output_directory "/home/vagrant/bedrock/bedrock-core/validation/OutputStorage/"
+		Argument="$2"
+		Argument[1]="$3"
+		Agrument[2]="$4"
+
+		echo "$Agrument"
+
+		# python /home/vagrant/bedrock/bedrock-core/validation/validationScript.py "-api" --filename "$3" --input_directory "$4" --output_directory "/home/vagrant/bedrock/bedrock-core/validation/OutputStorage/"
 		#made the last input hard coded because any file that is created is type checked then deleted
 	fi
 else

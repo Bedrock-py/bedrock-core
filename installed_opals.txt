@@ -59,3 +59,19 @@ opal-visualization-topics-trends
 opal-visualization-twitter-followers
 
 opal-analytics-smallk
+opal-analytics-clustering
+opal-analytics-clustering
+opal-analytics-dimensionreduction
+opal-analytics-classification
+opal-visualization-scatterplot
+opal-visualization-wordclouds
+opal-visualization-topterms
+opal-visualization-piechart
+opal-visualization-json
+opal-visualization-histogram
+opal-dataloader-ingest-text
+opal-dataloader-ingest-mongodb
+opal-dataloader-ingest-spreadsheet
+opal-analytics-smallk
+opal-dataloader-filter-lean
+opal-dataloader-filter-truth
