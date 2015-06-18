@@ -298,10 +298,35 @@ elif [ $1 = "validate" ]; then
 		exit 0
 	else
 		output_directory="/home/vagrant/bedrock/bedrock-core/validation/OutputStorage/"
-		api="$( cut -d ' ' -f 3 <<< "$@")";
-		filename="$( cut -d ' ' -f 5 <<< "$@")";
-		input_directory="$( cut -d ' ' -f 7 <<< "$@")";
-		python /home/vagrant/bedrock/bedrock-core/validation/validationScript.py --api "$api" --filename "$filename" --input_directory "$input_directory" --output_directory "/home/vagrant/bedrock/bedrock-core/validation/OutputStorage/"
+		if [ $2 = "--api" ]; then
+			api="$( cut -d ' ' -f 3 <<< "$@")"
+			if [ $4 = "--filename" ]; then
+				filename="$( cut -d ' ' -f 5 <<< "$@")"
+				input_directory="$( cut -d ' ' -f 7 <<< "$@")"
+			elif [ $4 = "--input_directory" ]; then
+				filename="$( cut -d ' ' -f 7 <<< "$@")"
+				input_directory="$( cut -d ' ' -f 5 <<< "$@")"
+			fi
+		elif [ $2 = "--filename" ]; then
+			filename="$( cut -d ' ' -f 3 <<< "$@")"
+			if [ $4 = "--api" ]; then
+				api="$( cut -d ' ' -f 5 <<< "$@")"
+				input_directory="$( cut -d ' ' -f 7 <<< "$@")"
+			elif [ $4 = "--input_directory" ]; then
+				api="$( cut -d ' ' -f 7 <<< "$@")"
+				input_directory="$( cut -d ' ' -f 5 <<< "$@")"
+			fi
+		elif [ $2 = "--input_directory" ]; then
+			input_directory="$( cut -d ' ' -f 3 <<< "$@")"
+			if [ $4 = "--api" ]; then
+				api="$( cut -d ' ' -f 5 <<< "$@")"
+				filename="$( cut -d ' ' -f 7 <<< "$@")"
+			elif [ $4 = "--filename" ]; then
+				api="$( cut -d ' ' -f 7 <<< "$@")"
+				filename="$( cut -d ' ' -f 5 <<< "$@")"
+			fi
+		fi
+		python /home/vagrant/bedrock/bedrock-core/validation/validationScript.py --api "$api" --filename "$filename" --input_directory "$input_directory" --output_directory "$output_directory"
 	fi
 else
     echo "Sorry, there is no script for that option"
