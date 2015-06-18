@@ -94,12 +94,10 @@ elif [ $1 = "list" ]; then
 
 fi
 
-#getting the metadata from the master_conf.json
-#jq is a json parser for shell scripting
-HOST=$(echo $OPALS | jq '.["'$2'"]'.host) #gets the host information
+HOST=$(echo $OPALS | jq '.["'$2'"]'.host)
 HOST="${HOST%\"}"
 HOST="${HOST#\"}"
-REPO=$(echo $OPALS | jq '.["'$2'"]'.repo) #gets the repo information
+REPO=$(echo $OPALS | jq '.["'$2'"]'.repo)
 REPO="${REPO%\"}"
 REPO="${REPO#\"}"
 
@@ -292,35 +290,39 @@ elif [ $1 = "reload" ]; then
 	done	
 
 elif [ $1 = "validate" ]; then
-	if [ $2 = "-h" ]; then
-		echo "Validate must take in 3 agrugments."
-		echo ""
-		echo "Argument 1 must be the API that where the file will be insterted."
-		echo "Argument 2 must be the absolute path to the file."
-		echo "Argument 3 must be the absolute path to any input files needed for the file or NA if the file does not take any inputs."
-		echo ""
-		exit 0
-	elif [ "$#" -ne 4 ]; then
-		echo "ERROR: validate must take 3 arguments exactly."
+	# if [ $2 = "-h" ]; then
+	# 	echo "Validate must take in 3 agrugments."
+	# 	echo ""
+	# 	echo "Argument 1 must be the API that where the file will be insterted."
+	# 	echo "Argument 2 must be the absolute path to the file."
+	# 	echo "Argument 3 must be the absolute path to any input files needed for the file or NA if the file does not take any inputs."
+	# 	echo ""
+	# 	exit 0
+	# elif [ "$#" -ne 4 ]; then
+	# 	echo "ERROR: validate must take 3 arguments exactly."
+	# 	exit 0
+	# else
+	# 	Argument="$2"
+	# 	Argument[1]="$3"
+	# 	Agrument[2]="$4"
+
+	# 	echo "$Agrument"
+
+	# 	# python /home/vagrant/bedrock/bedrock-core/validation/validationScript.py "-api" --filename "$3" --input_directory "$4" --output_directory "/home/vagrant/bedrock/bedrock-core/validation/OutputStorage/"
+	# 	#made the last input hard coded because any file that is created is type checked then deleted
+	# fi
+	if [ "$#" -ne 2 ]; then
+		echo "ERROR: validate must take exactly two arguments, the action(validate) and the filename."
 		exit 0
 	else
-		Argument="$2"
-		Argument[1]="$3"
-		Agrument[2]="$4"
-
-		echo "$Agrument"
-
-		# python /home/vagrant/bedrock/bedrock-core/validation/validationScript.py "-api" --filename "$3" --input_directory "$4" --output_directory "/home/vagrant/bedrock/bedrock-core/validation/OutputStorage/"
-		#made the last input hard coded because any file that is created is type checked then deleted
+		echo -n "Enter the following fields (api, filename, input_directory) as if it were the commnad line i.e. --(field) > "
+		read inputs
+		output_directory="/home/vagrant/bedrock/bedrock-core/validation/OutputStorage/"
+		api="$( cut -d ' ' -f 2 <<< "$inputs")";
+		filename="$( cut -d ' ' -f 4 <<< "$inputs")";
+		input_directory="$( cut -d ' ' -f 6 <<< "$inputs")";
+		python /home/vagrant/bedrock/bedrock-core/validation/validationScript.py --api "$api" --filename "$filename" --input_directory "$input_directory" --output_directory "/home/vagrant/bedrock/bedrock-core/validation/OutputStorage/"
 	fi
 else
     echo "Sorry, there is no script for that option"
 fi
-
-
-
-
-
-#goal is to be able to do ./opal.sh validate opal-analytics-clustering/Kmeans.py 
-#and eventually be able to switch between using an absolute path if something does not live on the 7th floor
-
