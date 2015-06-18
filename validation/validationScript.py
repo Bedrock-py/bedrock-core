@@ -301,35 +301,52 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 
 		exploreResult = dataloader.utils.explore(file_name, my_dir, [])
 		exploreResultList = list(exploreResult)
+		typeOfMatrix = ""
+		nameOfSource = ""
 		for elem in exploreResult:
 			if type(elem) == dict:
-				print elem
+				for key in elem.keys():
+					nameOfSource = str(key)
+				for value in elem.values():
+					for item in value[0].keys():
+						if item == "type":
+							typeOfMatrix = str(value[0]['type'])
 		typeListExplore = []
-
+		typeOfMatrix = typeOfMatrix[2:len(typeOfMatrix) - 2]
+		posted_data = {
+			'matrixFilters':{"Petal length":[], "Petal width":[]},
+			'matrixFeatures':["Petal width", "Petal length"],
+			'matrixFeaturesOriginal':["Petal width", "Petal length"],
+			'matrixName':"test",
+			'sourceName':nameOfSource,
+			'matrixTypes':[typeOfMatrix, typeOfMatrix]
+		}
+		secondLastOccurence = my_dir.rfind("/", 0, my_dir.rfind("/"))
+		my_dir = my_dir[:secondLastOccurence + 1]
 		src = {
 			'created':dataloader.utils.getCurrentTime(),
 			'host': "127.0.1.1",
 			'ingest_id':file_name,
 			'matrices':[],
-			# 'name':
-			'rootdir':my_dir
-			# 'src_id':
+			'name': nameOfSource,
+			'rootdir':my_dir,
+			'src_id': "test_files",
 			'src_type':"file"
 		}
 
-		print(src)
 
-
+		ingestResult = dataloader.utils.ingest(posted_data, src)
+		ingestResultList = list(ingestResult)
+		typeListIngest = []
+		print ingestResult
 		for i in range(len(exploreResultList)):
 			typeListExplore.append(type(exploreResultList[i]))
-		# for i in range(len(ingestResultList)):
-		# 	typeListIngest.append(type(ingestResultList[i]))
+		for i in range(len(ingestResultList)):
+			typeListIngest.append(type(ingestResultList[i]))
 
-		# secondLastOccurence = my_dir.rfind("/", 0, my_dir.rfind("/"))
-		# my_dir = my_dir[:secondLastOccurence + 1]
-		# for file in os.listdir(my_dir):
-		# 	if len(file) > 6:
-		# 		shutil.rmtree(my_dir + file + "/")
+		for file in os.listdir(my_dir):
+			if len(file) > 6:
+				shutil.rmtree(my_dir + file + "/")
 
 		if dict in typeListExplore and int not in typeListExplore:
 			specificErrorMessage += "Missing a int, explore function must return both a dict and a int."
@@ -338,12 +355,12 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		elif dict not in typeListExplore and int not in typeListExplore:
 			specificErrorMessage += "Missing a dict and int, explore function must return both a dict and a int."
 
-		# if bool in typeListIngest and list not in typeListIngest:
-		# 	specificErrorMessage += " Missing a list, ingest function must return both a boolean and a list."
-		# elif bool not in typeListIngest and list in typeListIngest:
-		# 	specificErrorMessage += " Missing a boolean value, ingest function must return both a boolean and a list."
-		# elif bool not in typeListIngest and list not in typeListIngest:
-		# 	specificErrorMessage += " Missing a boolean value and list, ingest function must return both a boolean and a list."
+		if bool in typeListIngest and list not in typeListIngest:
+			specificErrorMessage += " Missing a list, ingest function must return both a boolean and a list."
+		elif bool not in typeListIngest and list in typeListIngest:
+			specificErrorMessage += " Missing a boolean value, ingest function must return both a boolean and a list."
+		elif bool not in typeListIngest and list not in typeListIngest:
+			specificErrorMessage += " Missing a boolean value and list, ingest function must return both a boolean and a list."
 	elif desiredInterface == 4:
 
 		conf = {
