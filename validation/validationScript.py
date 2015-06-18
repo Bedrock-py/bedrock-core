@@ -279,29 +279,45 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		if (type(createResult) != dict):
 			specificErrorMessage += "Missing a dict return, create function must return a dict item."
 	elif desiredInterface == 3:
-		posted_data = {
-			"matrixFilters": {"Sepal width": [], "Sepal length": []},
-			"matrixFeatures":["Sepal width", "Sepal length"],
-			"matrixFeaturesOriginal":["Sepal width", "Sepal length"],
-			"matrixName":"test",
-			"sourceName":"iris",
-			"matrixTypes":["Numeric", "Numeric"]
-		}
+		# posted_data = {
+		# 	"matrixFilters": {"Sepal width": [], "Sepal length": []},
+		# 	"matrixFeatures":["Sepal width", "Sepal length"],
+		# 	"matrixFeaturesOriginal":["Sepal width", "Sepal length"],
+		# 	"matrixName":"test",
+		# 	"sourceName":"iris",
+		# 	"matrixTypes":["Numeric", "Numeric"]
+		# }
 
-		src = {
-			"created": "2015-02-23 22:34:22.060675",
-			"host": "127.0.1.1",
-			"ingest_id": "Spreadsheet",
-			"matrices": [],
-			"name": "iris",
-			"rootdir": "/home/vagrant/bedrock/bedrock-core/validation/caa1a3105a22477f8f9b4a3124cd41b6/",
-			"src_id": "caa1a3105a22477f8f9b4a3124cd41b6",
-			"src_type": "file"
-		}
+		# src = {
+		# 	"created": "2015-02-23 22:34:22.060675",
+		# 	"host": "127.0.1.1",
+		# 	"ingest_id": "Spreadsheet",
+		# 	"matrices": [],
+		# 	"name": "iris",
+		# 	"rootdir": "/home/vagrant/bedrock/bedrock-core/validation/caa1a3105a22477f8f9b4a3124cd41b6/",
+		# 	"src_id": "caa1a3105a22477f8f9b4a3124cd41b6",
+		# 	"src_type": "file"
+		# }
 
 		exploreResult = dataloader.utils.explore(file_name, my_dir, [])
 		exploreResultList = list(exploreResult)
+		for elem in exploreResult:
+			if type(elem) == dict:
+				print elem
 		typeListExplore = []
+
+		src = {
+			'created':dataloader.utils.getCurrentTime(),
+			'host': "127.0.1.1",
+			'ingest_id':file_name,
+			'matrices':[],
+			# 'name':
+			'rootdir':my_dir
+			# 'src_id':
+			'src_type':"file"
+		}
+
+		print(src)
 
 
 		for i in range(len(exploreResultList)):
@@ -329,9 +345,6 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		# elif bool not in typeListIngest and list not in typeListIngest:
 		# 	specificErrorMessage += " Missing a boolean value and list, ingest function must return both a boolean and a list."
 	elif desiredInterface == 4:
-		checkResult = dataloader.utils.check(file_name, file_metaData['name'], [])
-		if type(checkResult) != bool:
-			specificErrorMessage += "Missing boolean value, check funtion must return a boolean value"
 
 		conf = {
 			'mat_id':'27651d66d4cf4375a75208d3482476ac',
@@ -339,6 +352,9 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 			'src_id':'caa1a3105a22477f8f9b4a3124cd41b6',
 			'name':'iris'
 		}
+		checkResult = dataloader.utils.check(file_name, file_metaData['name'], conf)
+		if type(checkResult) != bool:
+			specificErrorMessage += "Missing boolean value, check funtion must return a boolean value."
 
 		applyResult = dataloader.utils.apply(file_name, file_metaData['parameters'], conf)
 		if type(applyResult) != dict:

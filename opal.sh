@@ -290,37 +290,17 @@ elif [ $1 = "reload" ]; then
 	done	
 
 elif [ $1 = "validate" ]; then
-	# if [ $2 = "-h" ]; then
-	# 	echo "Validate must take in 3 agrugments."
-	# 	echo ""
-	# 	echo "Argument 1 must be the API that where the file will be insterted."
-	# 	echo "Argument 2 must be the absolute path to the file."
-	# 	echo "Argument 3 must be the absolute path to any input files needed for the file or NA if the file does not take any inputs."
-	# 	echo ""
-	# 	exit 0
-	# elif [ "$#" -ne 4 ]; then
-	# 	echo "ERROR: validate must take 3 arguments exactly."
-	# 	exit 0
-	# else
-	# 	Argument="$2"
-	# 	Argument[1]="$3"
-	# 	Agrument[2]="$4"
-
-	# 	echo "$Agrument"
-
-	# 	# python /home/vagrant/bedrock/bedrock-core/validation/validationScript.py "-api" --filename "$3" --input_directory "$4" --output_directory "/home/vagrant/bedrock/bedrock-core/validation/OutputStorage/"
-	# 	#made the last input hard coded because any file that is created is type checked then deleted
-	# fi
-	if [ "$#" -ne 2 ]; then
-		echo "ERROR: validate must take exactly two arguments, the action(validate) and the filename."
+	if [ "$#" -ne 7 ]; then
+		echo "ERROR: validate must take exactly six arguments in the format: "
+		echo "		--api [name of api]"
+		echo "		--filename [absolute path for the location of the file]"
+		echo "		--input_directory [absoulte path for location of input files]"
 		exit 0
 	else
-		echo -n "Enter the following fields (api, filename, input_directory) as if it were the commnad line i.e. --(field) > "
-		read inputs
 		output_directory="/home/vagrant/bedrock/bedrock-core/validation/OutputStorage/"
-		api="$( cut -d ' ' -f 2 <<< "$inputs")";
-		filename="$( cut -d ' ' -f 4 <<< "$inputs")";
-		input_directory="$( cut -d ' ' -f 6 <<< "$inputs")";
+		api="$( cut -d ' ' -f 3 <<< "$@")";
+		filename="$( cut -d ' ' -f 5 <<< "$@")";
+		input_directory="$( cut -d ' ' -f 7 <<< "$@")";
 		python /home/vagrant/bedrock/bedrock-core/validation/validationScript.py --api "$api" --filename "$filename" --input_directory "$input_directory" --output_directory "/home/vagrant/bedrock/bedrock-core/validation/OutputStorage/"
 	fi
 else
