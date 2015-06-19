@@ -168,22 +168,6 @@ def validate_file_name(fileToCheck, desiredInterface):
 		else:
 			return ""
 
-	# 	found = False
-	# 	i = 0
-	# 	while found == False and i < len(returnsList):
-	# 		for indReturn in returnsList:
-	# 			if indReturn == class_name:
-	# 				found = True
-	# 				i = len(returnsList)
-	# 			i += 1
-
-	# 	if found == False:
-	# 		return "File name does not match Class name.\n"
-	# 	else:
-	# 		return ""
-	# else:
-	# 	return "File name does not match Class name\n"
-
 def list_returns(fileToCheck, desiredInterface):
 	returnsList = []
 	newLine = ""
@@ -387,9 +371,9 @@ def create_input_dict(my_dir, inputList):
 	length = len(inputList)
 	for file in os.listdir(my_dir):
 		if file in inputList:
-			if length == 1 or (length > 1 and file != inputList[length - 1]) or (length > 1 and inputList[i] != inputList[i + 1]):
+			if length == 1 or (length > 1 and file != inputList[length - 1]) or (length > 1 and inputList[i] != inputList[i + 1]): #in the list of files, neighbors are not the same
 				returnDict.update({file:{'rootdir':my_dir}})
-			elif length > 1 and inputList[i] == inputList[i + 1]:
+			elif length > 1 and inputList[i] == inputList[i + 1]: ##neighbors are the same
 				firstNewFile = file + "_" + str(j)
 				j += 1
 				returnDict.update({firstNewFile:{'rootdir':my_dir}})

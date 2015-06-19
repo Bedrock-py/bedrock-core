@@ -4,8 +4,7 @@ if [[ "$?" = 1 ]]; then
 fi
 
 OPALSERVER=130.207.211.77/opalserver/api/0.1/
-OPALS=$(sudo curl --silent $OPALSERVER/opals/) #returns all the JSON objects, what it in the master_conf.json
-
+OPALS=$(sudo curl --silent $OPALSERVER/opals/)
 if [ -z "$BEDROCK_DIR" ]; then
 	BEDROCK_DIR=~/bedrock/
 fi 
@@ -94,25 +93,38 @@ elif [ $1 = "list" ]; then
 
 fi
 
-HOST=$(echo $OPALS | jq '.["'$2'"]'.host)
+count=0
+for arg in "$@"
+do
+	count=$((count + 1))
+	if [ "$arg" = "--filename" ]; then
+		inputNumber=$((count + 1))
+	fi
+	if [ "$inputNumber" = "$count" ]; then
+		filename="$arg"
+	fi
+done
+input=$(echo "$filename" | rev | cut -d/ -f2 | rev)
+
+HOST=$(echo $OPALS | jq '.["'$input'"]'.host)
 HOST="${HOST%\"}"
 HOST="${HOST#\"}"
-REPO=$(echo $OPALS | jq '.["'$2'"]'.repo)
+REPO=$(echo $OPALS | jq '.["'$input'"]'.repo)
 REPO="${REPO%\"}"
 REPO="${REPO#\"}"
 
-SUPPORTS=$(echo $OPALS | jq '.["'$2'"]'.supports)
-UNITS=$(echo $OPALS | jq '.["'$2'"]'.units)
-API=$(echo $OPALS | jq '.["'$2'"]'.api)
+SUPPORTS=$(echo $OPALS | jq '.["'$input'"]'.supports)
+UNITS=$(echo $OPALS | jq '.["'$input'"]'.units)
+API=$(echo $OPALS | jq '.["'$input'"]'.api)
 API="${API%\"}"
 API="${API#\"}"
-INTERFACE=$(echo $OPALS | jq '.["'$2'"]'.interface)
+INTERFACE=$(echo $OPALS | jq '.["'$input'"]'.interface)
 INTERFACE="${INTERFACE%\"}"
 INTERFACE="${INTERFACE#\"}"
 
-SCRIPT=$(echo $OPALS | jq '.["'$2'"]'.installation_script)
+SCRIPT=$(echo $OPALS | jq '.["'$input'"]'.installation_script)
 
-SYSTEM=$(echo $OPALS | jq '.["'$2'"]'.system_dependencies)
+SYSTEM=$(echo $OPALS | jq '.["'$input'"]'.system_dependencies)
 
 TARGET=/var/www/bedrock/$API/opals/
 
@@ -290,41 +302,20 @@ elif [ $1 = "reload" ]; then
 	done	
 
 elif [ $1 = "validate" ]; then
-	if [ "$#" -ne 7 ]; then
+	if [ "$#" -ne 5 ]; then
 		echo "ERROR: validate must take exactly six arguments in the format: "
-		echo "		--api [name of api]"
 		echo "		--filename [absolute path for the location of the file]"
 		echo "		--input_directory [absoulte path for location of input files]"
 		exit 0
 	else
 		output_directory="/home/vagrant/bedrock/bedrock-core/validation/OutputStorage/"
-		if [ $2 = "--api" ]; then
-			api="$( cut -d ' ' -f 3 <<< "$@")"
-			if [ $4 = "--filename" ]; then
-				filename="$( cut -d ' ' -f 5 <<< "$@")"
-				input_directory="$( cut -d ' ' -f 7 <<< "$@")"
-			elif [ $4 = "--input_directory" ]; then
-				filename="$( cut -d ' ' -f 7 <<< "$@")"
-				input_directory="$( cut -d ' ' -f 5 <<< "$@")"
-			fi
-		elif [ $2 = "--filename" ]; then
+		api="$INTERFACE"
+		if [ $2 = "--filename" ]; then
 			filename="$( cut -d ' ' -f 3 <<< "$@")"
-			if [ $4 = "--api" ]; then
-				api="$( cut -d ' ' -f 5 <<< "$@")"
-				input_directory="$( cut -d ' ' -f 7 <<< "$@")"
-			elif [ $4 = "--input_directory" ]; then
-				api="$( cut -d ' ' -f 7 <<< "$@")"
-				input_directory="$( cut -d ' ' -f 5 <<< "$@")"
-			fi
+			input_directory="$( cut -d ' ' -f 5 <<< "$@")"
 		elif [ $2 = "--input_directory" ]; then
 			input_directory="$( cut -d ' ' -f 3 <<< "$@")"
-			if [ $4 = "--api" ]; then
-				api="$( cut -d ' ' -f 5 <<< "$@")"
-				filename="$( cut -d ' ' -f 7 <<< "$@")"
-			elif [ $4 = "--filename" ]; then
-				api="$( cut -d ' ' -f 7 <<< "$@")"
-				filename="$( cut -d ' ' -f 5 <<< "$@")"
-			fi
+			filename="$( cut -d ' ' -f 5 <<< "$@")"
 		fi
 		python /home/vagrant/bedrock/bedrock-core/validation/validationScript.py --api "$api" --filename "$filename" --input_directory "$input_directory" --output_directory "$output_directory"
 	fi
