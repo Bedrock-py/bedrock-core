@@ -20,6 +20,9 @@ def find_imports(fileToCheck, desiredInterface):
 			newFront = line.find("import")
 			if newFront != -1:
 				line = line[newFront + 7:]
+				possibleAs = line.find(" as")
+				if possibleAs != -1:
+					line = line[possibleAs + 4:]
 				line.split()
 				if line.find("*") != -1 and len(line) == 2:
 					importedList.extend(line)
@@ -42,7 +45,7 @@ def find_imports(fileToCheck, desiredInterface):
 			return "Missing the IngestModule input and * input, can be fixed using 'from ..ingest_utils import IngestModule' and 'from ..utils import *'.\n"
 		elif "IngestModule" in importedList and asterikFound == False:
 			return "Missing the * input, can be fixed using 'from ..utils import *'.\n"
-		elif "IngestModule" not in importedList and asterikFound == False:
+		elif "IngestModule" not in importedList and asterikFound == True:
 			return "Missing the IngestModule input, can be fixed using 'from ..filter_utils import IngestModule'.\n"
 		else:
 			return ""
@@ -51,7 +54,7 @@ def find_imports(fileToCheck, desiredInterface):
 			return "Missing the Filter input and * input, can be fixed using 'from ..filter_utils import Filter' and from ..utils import *.\n"
 		elif "Filter" in importedList and asterikFound == False:
 			return "Missing the * input, can be fixed using 'from ..utils import *'.\n"
-		elif "Filter" not in importedList and asterikFound == False:
+		elif "Filter" not in importedList and asterikFound == True:
 			return "Missing the Filter input, can be fixed using 'from ..filter_utils import Filter'.\n"
 		else:
 			return ""
@@ -263,26 +266,6 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		if (type(createResult) != dict):
 			specificErrorMessage += "Missing a dict return, create function must return a dict item."
 	elif desiredInterface == 3:
-		# posted_data = {
-		# 	"matrixFilters": {"Sepal width": [], "Sepal length": []},
-		# 	"matrixFeatures":["Sepal width", "Sepal length"],
-		# 	"matrixFeaturesOriginal":["Sepal width", "Sepal length"],
-		# 	"matrixName":"test",
-		# 	"sourceName":"iris",
-		# 	"matrixTypes":["Numeric", "Numeric"]
-		# }
-
-		# src = {
-		# 	"created": "2015-02-23 22:34:22.060675",
-		# 	"host": "127.0.1.1",
-		# 	"ingest_id": "Spreadsheet",
-		# 	"matrices": [],
-		# 	"name": "iris",
-		# 	"rootdir": "/home/vagrant/bedrock/bedrock-core/validation/caa1a3105a22477f8f9b4a3124cd41b6/",
-		# 	"src_id": "caa1a3105a22477f8f9b4a3124cd41b6",
-		# 	"src_type": "file"
-		# }
-
 		exploreResult = dataloader.utils.explore(file_name, my_dir, [])
 		exploreResultList = list(exploreResult)
 		typeOfMatrix = ""
@@ -299,6 +282,7 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 								typeOfMatrix = str(value[0]['type'])
 		typeListExplore = []
 		typeOfMatrix = typeOfMatrix[2:len(typeOfMatrix) - 2]
+
 		posted_data = {
 			'matrixFilters':{"Petal length":[], "Petal width":[]},
 			'matrixFeatures':["Petal width", "Petal length"],
@@ -307,8 +291,8 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 			'sourceName':nameOfSource,
 			'matrixTypes':[typeOfMatrix, typeOfMatrix]
 		}
-		secondLastOccurence = my_dir.rfind("/", 0, my_dir.rfind("/"))
-		my_dir = my_dir[:secondLastOccurence + 1]
+		secondToLastOccurence = my_dir.rfind("/", 0, my_dir.rfind("/"))
+		my_dir = my_dir[:secondToLastOccurence + 1]
 		src = {
 			'created':dataloader.utils.getCurrentTime(),
 			'host': "127.0.1.1",
@@ -371,9 +355,9 @@ def create_input_dict(my_dir, inputList):
 	length = len(inputList)
 	for file in os.listdir(my_dir):
 		if file in inputList:
-			if length == 1 or (length > 1 and file != inputList[length - 1]) or (length > 1 and inputList[i] != inputList[i + 1]): #in the list of files, neighbors are not the same
+			if length == 1 or (length > 1 and file != inputList[length - 1]) or (length > 1 and inputList[i] != inputList[i + 1]):
 				returnDict.update({file:{'rootdir':my_dir}})
-			elif length > 1 and inputList[i] == inputList[i + 1]: ##neighbors are the same
+			elif length > 1 and inputList[i] == inputList[i + 1]:
 				firstNewFile = file + "_" + str(j)
 				j += 1
 				returnDict.update({firstNewFile:{'rootdir':my_dir}})
