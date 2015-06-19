@@ -307,10 +307,12 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 			if type(elem) == dict:
 				for key in elem.keys():
 					nameOfSource = str(key)
-				for value in elem.values():
-					for item in value[0].keys():
-						if item == "type":
-							typeOfMatrix = str(value[0]['type'])
+					print(exploreResult)
+				if len(elem.values()) > 1:
+					for value in elem.values():
+						for item in value[0].keys():
+							if item == "type":
+								typeOfMatrix = str(value[0]['type'])
 		typeListExplore = []
 		typeOfMatrix = typeOfMatrix[2:len(typeOfMatrix) - 2]
 		posted_data = {
