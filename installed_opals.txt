@@ -75,3 +75,5 @@ opal-dataloader-ingest-spreadsheet
 opal-analytics-smallk
 opal-dataloader-filter-lean
 opal-dataloader-filter-truth
+dashboard-diamondeye
+dashboard-diamondeye

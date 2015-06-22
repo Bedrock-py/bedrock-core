@@ -303,7 +303,7 @@ elif [ $1 = "reload" ]; then
 
 elif [ $1 = "validate" ]; then
 	if [ "$#" -ne 5 ]; then
-		echo "ERROR: validate must take exactly six arguments in the format: "
+		echo "ERROR: validate must take exactly four arguments in the format: "
 		echo "		--filename [absolute path for the location of the file]"
 		echo "		--input_directory [absoulte path for location of input files]"
 		exit 0

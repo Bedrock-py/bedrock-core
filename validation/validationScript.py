@@ -268,29 +268,43 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 	elif desiredInterface == 3:
 		exploreResult = dataloader.utils.explore(file_name, my_dir, [])
 		exploreResultList = list(exploreResult)
-		typeOfMatrix = ""
+		count = 0
+		typeOfMatrix = []
+		matrix = ""
 		nameOfSource = ""
+		filterOfMatrix = []
 		for elem in exploreResult:
 			if type(elem) == dict:
 				for key in elem.keys():
 					nameOfSource = str(key)
-					print(exploreResult)
-				if len(elem.values()) > 1:
+				if len(elem.values()) == 1:
 					for value in elem.values():
-						for item in value[0].keys():
-							if item == "type":
-								typeOfMatrix = str(value[0]['type'])
+						while count < len(value):
+							for item in value[count].keys():
+								if item == "type":
+									matrix = str(value[count]['type'])
+									matrix = matrix[2:len(matrix) - 2]
+									typeOfMatrix.append(matrix)
+								if item == "key_usr":
+									filterOfMatrix.append(str(value[count]['key_usr']))
+							count += 1
 		typeListExplore = []
-		typeOfMatrix = typeOfMatrix[2:len(typeOfMatrix) - 2]
-
 		posted_data = {
-			'matrixFilters':{"Petal length":[], "Petal width":[]},
-			'matrixFeatures':["Petal width", "Petal length"],
-			'matrixFeaturesOriginal':["Petal width", "Petal length"],
+			'matrixFilters':{},
+			'matrixFeatures':[],
+			'matrixFeaturesOriginal':[],
 			'matrixName':"test",
 			'sourceName':nameOfSource,
-			'matrixTypes':[typeOfMatrix, typeOfMatrix]
+			'matrixTypes':[]
 		}
+		for elem in filterOfMatrix:
+			posted_data['matrixFilters'].update({elem:{}})
+			posted_data['matrixFeatures'].append(elem)
+			posted_data['matrixFeaturesOriginal'].append(elem)
+		for elem in typeOfMatrix:
+			posted_data['matrixTypes'].append(elem)
+
+		print posted_data
 		secondToLastOccurence = my_dir.rfind("/", 0, my_dir.rfind("/"))
 		my_dir = my_dir[:secondToLastOccurence + 1]
 		src = {
@@ -304,11 +318,9 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 			'src_type':"file"
 		}
 
-
 		ingestResult = dataloader.utils.ingest(posted_data, src)
 		ingestResultList = list(ingestResult)
 		typeListIngest = []
-		print ingestResult
 		for i in range(len(exploreResultList)):
 			typeListExplore.append(type(exploreResultList[i]))
 		for i in range(len(ingestResultList)):
