@@ -304,7 +304,6 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		for elem in typeOfMatrix:
 			posted_data['matrixTypes'].append(elem)
 
-		print posted_data
 		secondToLastOccurence = my_dir.rfind("/", 0, my_dir.rfind("/"))
 		my_dir = my_dir[:secondToLastOccurence + 1]
 		src = {
@@ -326,9 +325,10 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		for i in range(len(ingestResultList)):
 			typeListIngest.append(type(ingestResultList[i]))
 
-		for file in os.listdir(my_dir):
-			if len(file) > 6:
-				shutil.rmtree(my_dir + file + "/")
+		if nameOfSource == "Spreadsheet":
+			for file in os.listdir(my_dir):
+				if len(file) > 6:
+					shutil.rmtree(my_dir + file + "/")
 
 		if dict in typeListExplore and int not in typeListExplore:
 			specificErrorMessage += "Missing a int, explore function must return both a dict and a int."
