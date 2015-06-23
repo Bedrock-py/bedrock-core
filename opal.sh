@@ -125,6 +125,7 @@ data=$(echo $OPALS | jq '.["'$input'"]') #data is set to the value of the config
 if [ $data = "null" ]; then
 	VALID_CONF=false
 fi
+echo $data
 
 if [ "$VALID_CONF" = true ]; then 
 	HOST=$(echo $OPALS | jq '.["'$input'"]'.host)
@@ -174,7 +175,7 @@ if [ $1 = "install" ]; then
 			echo "1: opal install [opal-name]"
 			echo "	*This opal must already be installed on the system."
 			echo ""
-			echo "2. opal install --path [full filepath to directory]"
+			echo "2. opal install [full filepath to directory]"
 			echo "	*This dir must contain a conf.json file with metadata for opal."
 			exit 0
 		fi
@@ -336,22 +337,23 @@ elif [ $1 = "reload" ]; then
 	done	
 
 elif [ $1 = "validate" ]; then
-	if [ "$#" -ne 5 ]; then
+	if [ "$#" -ne 5 ]; then #there must be 5 arguments following opal.sh
 		echo "ERROR: validate must take exactly two arguments: "
 		echo "		--filename [absolute path for the location of the file]"
 		echo "		--input_directory [absoulte path for location of input files]"
 		exit 0
 	else
-		output_directory="/home/vagrant/bedrock/bedrock-core/validation/OutputStorage/"
-		api="$INTERFACE"
-		if [ $2 = "--filename" ]; then
-			filename="$( cut -d ' ' -f 3 <<< "$@")"
-			input_directory="$( cut -d ' ' -f 5 <<< "$@")"
-		elif [ $2 = "--input_directory" ]; then
-			input_directory="$( cut -d ' ' -f 3 <<< "$@")"
-			filename="$( cut -d ' ' -f 5 <<< "$@")"
+		output_directory="/home/vagrant/bedrock/bedrock-core/validation/OutputStorage/" #the output directory will always be the same because whatever is made gets deleted right away
+		api="$INTERFACE" #using code above able to find the interface without the user having to input it
+		if [ $2 = "--filename" ]; then #scenario where --filename is the second argument
+			filename="$( cut -d ' ' -f 3 <<< "$@")" #the actual filename will follow the --filename so the third agrument is made filename
+			input_directory="$( cut -d ' ' -f 5 <<< "$@")" #same reasoning as above
+		elif [ $2 = "--input_directory" ]; then #scenario where --input_directory is the second argument
+			input_directory="$( cut -d ' ' -f 3 <<< "$@")" #the actual input_directory will follow the --input_directory so the third agrument is made input_directory
+			filename="$( cut -d ' ' -f 5 <<< "$@")" #same reasoning as above 
 		fi
 		python /home/vagrant/bedrock/bedrock-core/validation/validationScript.py --api "$api" --filename "$filename" --input_directory "$input_directory" --output_directory "$output_directory"
+		#call to validationScript.py that uses the inputs figured out above
 	fi
 else
     echo "Sorry, there is no script for that option"
