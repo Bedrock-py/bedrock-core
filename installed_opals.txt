@@ -1,4 +1,3 @@
-opal-analytics-clustering
 
 opal-analytics-dimensionreduction
 
@@ -59,8 +58,6 @@ opal-visualization-topics-trends
 opal-visualization-twitter-followers
 
 opal-analytics-smallk
-opal-analytics-clustering
-opal-analytics-clustering
 opal-analytics-dimensionreduction
 opal-analytics-classification
 opal-visualization-scatterplot
@@ -78,3 +75,24 @@ opal-dataloader-filter-truth
 dashboard-diamondeye
 dashboard-diamondeye
 
+opal-visualization-topterms/TopComparison.py
+/home/vagrant/bedrock/blah/
+/home/vagrant/bedrock/blah/
+/home/vagrant/bedrock/blah/
+/home/vagrant/bedrock/blah/
+/home/vagrant/bedrock/blah/
+/home/vagrant/bedrock/blah/
+/home/vagrant/bedrock/blah/
+/home/vagrant/bedrock/blah/
+/home/vagrant/bedrock/blah/
+/home/vagrant/bedrock/blah/
+/home/vagrant/bedrock/blah/
+/home/vagrant/bedrock/blah/
+/home/vagrant/bedrock/blah/
+../opal-analytics-test
+../opal-analytics-test
+opal-analytics-test
+opal-analytics-test
+opal-analytics-test
+opal-analytics-test
+opal-analytics-test

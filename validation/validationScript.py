@@ -273,6 +273,7 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		matrix = ""
 		nameOfSource = ""
 		filterOfMatrix = []
+		print exploreResult
 		for elem in exploreResult:
 			if type(elem) == dict:
 				for key in elem.keys():
@@ -298,6 +299,8 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 			'matrixTypes':[]
 		}
 		for elem in filterOfMatrix:
+			# posted_data['matrixFilters'].update({elem:{"classname":"DocumentLEAN","filter_id":"DocumentLEAN","parameters":[],"stage":"before","type":"extract"}}) #for text
+			# {"classname":"TweetDocumentLEAN","filter_id":"lean.python.TweetDocumentLEAN","parameters":[{"attrname":"include","name":"Include the following keywords","type":"input","value":""},{"attrname":"sent","value":"Yes"},{"attrname":"exclude","name":"Exclude the following keywords","type":"input","value":""},{"attrname":"lang","name":"Language","type":"input","value":"en"},{"attrname":"limit","name":"Limit","type":"input","value":"-1"},{"attrname":"start","name":"Start time","type":"input","value":str(self.starttime)},{"attrname":"end","name":"End time","type":"input","value":str(self.endtime)},{"attrname":"geo","name":"Geo","type":"input","value":""}],"stage":"before","type":"extract"}
 			posted_data['matrixFilters'].update({elem:{}})
 			posted_data['matrixFeatures'].append(elem)
 			posted_data['matrixFeaturesOriginal'].append(elem)

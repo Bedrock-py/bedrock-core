@@ -3,11 +3,19 @@ if [[ "$?" = 1 ]]; then
 	sudo apt-get install jq
 fi
 
-OPALSERVER=130.207.211.77/opalserver/api/0.1/
-OPALS=$(sudo curl --silent $OPALSERVER/opals/)
+
 if [ -z "$BEDROCK_DIR" ]; then
 	BEDROCK_DIR=~/bedrock/
 fi 
+
+OPALSERVER=130.207.211.77/opalserver/api/0.1/ #sets OPALSERVER to the default server
+OPALS=$(sudo curl --silent $OPALSERVER/opals/) #sets OPALS to the contents of master_confug.json
+REMOTE=true #REMOTE true means that these are not local  
+if [ -f "$BEDROCK_DIR$2/config.json" ]; then #if the path has a config.json file it means that this is not part of opalserver already
+	OPALS=$(cat $BEDROCK_DIR$2/config.json) #set OPALS to the content of that config.json file
+	REMOTE=false #path is local so remote is set to false
+fi 
+
 
 if [ $1 = "-h" ]; then
 	echo "Use this script to install, remove, reload, or validate opals or to install and remove applications:"
@@ -94,41 +102,56 @@ elif [ $1 = "list" ]; then
 fi
 
 count=0
-for arg in "$@"
-do
-	count=$((count + 1))
-	if [ "$arg" = "--filename" ]; then
-		inputNumber=$((count + 1))
-	fi
-	if [ "$inputNumber" = "$count" ]; then
-		filename="$arg"
-	fi
-done
-input=$(echo "$filename" | rev | cut -d/ -f2 | rev)
-
-HOST=$(echo $OPALS | jq '.["'$input'"]'.host)
-HOST="${HOST%\"}"
-HOST="${HOST#\"}"
-REPO=$(echo $OPALS | jq '.["'$input'"]'.repo)
-REPO="${REPO%\"}"
-REPO="${REPO#\"}"
-
-SUPPORTS=$(echo $OPALS | jq '.["'$input'"]'.supports)
-UNITS=$(echo $OPALS | jq '.["'$input'"]'.units)
-API=$(echo $OPALS | jq '.["'$input'"]'.api)
-API="${API%\"}"
-API="${API#\"}"
-INTERFACE=$(echo $OPALS | jq '.["'$input'"]'.interface)
-INTERFACE="${INTERFACE%\"}"
-INTERFACE="${INTERFACE#\"}"
-
-SCRIPT=$(echo $OPALS | jq '.["'$input'"]'.installation_script)
-
-SYSTEM=$(echo $OPALS | jq '.["'$input'"]'.system_dependencies)
-
-TARGET=/var/www/bedrock/$API/opals/
+input=""
+if [ $1 = "validate" ]; then 
+	for arg in "$@" #move through each argument entered into command line
+	do
+		count=$((count + 1)) #automatically increment the count by 1
+		if [ "$arg" = "--filename" ]; then 
+			inputNumber=$((count + 1)) #the arguement after --filepath will be the filepath so increase count by 1 and set to inputNumber
+		fi
+		if [ "$inputNumber" = "$count" ]; then
+			filename="$arg"
+		fi
+	done
+	input=$(echo "$filename" | rev | cut -d/ -f2 | rev) #parse the filename till it only leaves opal-[]-[]
+else
+	input="$2" #input is whatever the normal input would be if not trying to validate
+fi
 
 
+VALID_CONF=true
+data=$(echo $OPALS | jq '.["'$input'"]') #data is set to the value of the config.json file
+if [ $data = "null" ]; then
+	VALID_CONF=false
+fi
+
+if [ "$VALID_CONF" = true ]; then 
+	HOST=$(echo $OPALS | jq '.["'$input'"]'.host)
+	HOST="${HOST%\"}"
+	HOST="${HOST#\"}"
+	REPO=$(echo $OPALS | jq '.["'$input'"]'.repo)
+	REPO="${REPO%\"}"
+	REPO="${REPO#\"}"
+
+	SUPPORTS=$(echo $OPALS | jq '.["'$input'"]'.supports)
+	UNITS=$(echo $OPALS | jq '.["'$input'"]'.units)
+	API=$(echo $OPALS | jq '.["'$input'"]'.api)
+	API="${API%\"}"
+	API="${API#\"}"
+	INTERFACE=$(echo $OPALS | jq '.["'$input'"]'.interface)
+	INTERFACE="${INTERFACE%\"}"
+	INTERFACE="${INTERFACE#\"}"
+
+	SCRIPT=$(echo $OPALS | jq '.["'$input'"]'.installation_script)
+
+	SYSTEM=$(echo $OPALS | jq '.["'$input'"]'.system_dependencies)
+
+	TARGET=/var/www/bedrock/$API/opals/
+else
+	echo "ERROR: File does not have a valid configuration."
+	exit 0
+fi
 
 if [ $1 = "install" ]; then
 
@@ -146,17 +169,28 @@ if [ $1 = "install" ]; then
 		done
 
 	else
-
+		if [ $2 = "-h" ]; then 
+			echo "Two Choices:"
+			echo "1: opal install [opal-name]"
+			echo "	*This opal must already be installed on the system."
+			echo ""
+			echo "2. opal install --path [full filepath to directory]"
+			echo "	*This dir must contain a conf.json file with metadata for opal."
+			exit 0
+		fi
 		if [ "$URL" = null ]; then
 			echo "ERROR: No opal by that name."
 			exit 0
-		fi 
+		fi
+
 		echo "Installing $2..."
-		if [ ! -d "$BEDROCK_DIR/$2" ]; then
-			git clone -b master --single-branch git@$HOST:$REPO $BEDROCK_DIR$2
-			if [ $? -ne 0 ]  # revert to HTTPS if keys not present
-			then
-			  git clone -b master --single-branch https://$HOST/$REPO $BEDROCK_DIR$2
+		if [ "$REMOTE" = true ]; then
+			if [ ! -d "$BEDROCK_DIR/$2" ]; then
+				git clone -b master --single-branch git@$HOST:$REPO $BEDROCK_DIR$2
+				if [ $? -ne 0 ]  # revert to HTTPS if keys not present
+				then
+			  	git clone -b master --single-branch https://$HOST/$REPO $BEDROCK_DIR$2
+				fi
 			fi
 		fi
 
@@ -303,7 +337,7 @@ elif [ $1 = "reload" ]; then
 
 elif [ $1 = "validate" ]; then
 	if [ "$#" -ne 5 ]; then
-		echo "ERROR: validate must take exactly four arguments in the format: "
+		echo "ERROR: validate must take exactly two arguments: "
 		echo "		--filename [absolute path for the location of the file]"
 		echo "		--input_directory [absoulte path for location of input files]"
 		exit 0
