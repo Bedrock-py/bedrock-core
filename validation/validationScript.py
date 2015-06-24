@@ -4,7 +4,7 @@ import fnmatch
 import os
 import shutil
 import sys
-
+import json
 sys.path.insert(1, '/var/www/bedrock/')
 
 import analytics.utils
@@ -12,24 +12,23 @@ import dataloader.utils
 import visualization.utils
 from multiprocessing import Queue
 
+#function to determine if the file being checked has the appropriate imports
 def find_imports(fileToCheck, desiredInterface):
 	importedList = []
 	asterikFound = False
 	with open(fileToCheck, 'r') as pyFile:
 		for line in pyFile:
-			newFront = line.find("import")
-			if newFront != -1:
-				line = line[newFront + 7:]
-				possibleAs = line.find(" as")
+			newFront = line.find("import") #finds the first occurence of the word import on the line
+			if newFront != -1: #an occurence of import has been found
+				line = line[newFront + 7:] #sets line to now start at the word after import
+				possibleAs = line.find(" as") #used to find import states that have the structure (from x import y as z)
 				if possibleAs != -1:
 					line = line[possibleAs + 4:]
-				line.split()
-				if line.find("*") != -1 and len(line) == 2:
+				if line.find("*") != -1 and len(line) == 2: #if the import is just the *
 					importedList.extend(line)
-				if line.find("*") != -1:
 					asterikFound = True
-				line =[word.strip(punctuation) for word in line.split()]
-				importedList.extend(line)
+				line =[word.strip(punctuation) for word in line.split()] #correctly splits the inputs based on puncuation
+				importedList.extend(line) #creates a single list of all the imports
 	if desiredInterface == 1:
 		if "Algorithm" not in importedList:
 			return "Missing the Algorithm input, can be fixed using 'from ..analytics import Algorithm'.\n"
@@ -224,11 +223,12 @@ def check_return_values(fileToCheck, desiredInterface):
 		else:
 			return ""
 
-def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directory):
+def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directory, filter_specs):
 	specificErrorMessage = ""
 	queue = Queue()
 	lastOccurence = fileToCheck.rfind("/")
 	file_name = fileToCheck[lastOccurence + 1:len(fileToCheck) - 3]
+	print filter_specs
 	if desiredInterface == 1:
 		file_metaData = analytics.utils.get_metadata(file_name)
 	elif desiredInterface == 2:
@@ -258,6 +258,7 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		if (type(createResult) != dict):
 			specificErrorMessage += "Missing a dict return, create function must return a dict item."
 	elif desiredInterface == 3:
+		filter_specs_dict = json.loads(str(filter_specs))
 		exploreResult = dataloader.utils.explore(file_name, my_dir, [])
 		exploreResultList = list(exploreResult)
 		count = 0
@@ -291,9 +292,8 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		}
 
 		# posted_data['matrixFilters'].update({filterOfMatrix[0]:{"classname":"DocumentLEAN","filter_id":"DocumentLEAN","parameters":[],"stage":"before","type":"extract"}}) #for Text
-
-
-		posted_data['matrixFilters'].update({filterOfMatrix[0]:{"classname":"TweetDocumentLEAN","filter_id":"TweetDocumentLEAN","parameters":[{"attrname":"include","name":"Include the following keywords","type":"input","value":""},{"attrname":"sent","value":"No"},{"attrname":"exclude","name":"Exclude the following keywords","type":"input","value":""},{"attrname":"lang","name":"Language","type":"input","value":""},{"attrname":"limit","name":"Limit","type":"input","value":"10"},{"attrname":"start","name":"Start time","type":"input","value":""},{"attrname":"end","name":"End time","type":"input","value":""},{"attrname":"geo","name":"Geo","type":"input","value":""}],"stage":"before","type":"extract"}}) #for Mongo
+		# posted_data['matrixFilters'].update({filterOfMatrix[0]:{"classname":"TweetDocumentLEAN","filter_id":"TweetDocumentLEAN","parameters":[{"attrname":"include","name":"Include the following keywords","type":"input","value":""},{"attrname":"sent","value":"No"},{"attrname":"exclude","name":"Exclude the following keywords","type":"input","value":""},{"attrname":"lang","name":"Language","type":"input","value":""},{"attrname":"limit","name":"Limit","type":"input","value":"10"},{"attrname":"start","name":"Start time","type":"input","value":""},{"attrname":"end","name":"End time","type":"input","value":""},{"attrname":"geo","name":"Geo","type":"input","value":""}],"stage":"before","type":"extract"}}) #for Mongo
+		posted_data['matrixFilters'].update({filterOfMatrix[0]:filter_specs_dict})
 
 		# posted_data['matrixFilters'].update({filterOfMatrix[0]:{}}) #for spreadsheet
 
@@ -325,6 +325,8 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		for file in os.listdir(my_dir):
 			if os.path.isdir(my_dir + file) and len(file) > 15:
 				shutil.rmtree(my_dir + file + "/")
+			if file.startswith("reduced_"):
+				os.remove(os.path.join(my_dir, file))
 
 		if dict in typeListExplore and int not in typeListExplore:
 			specificErrorMessage += "Missing a int, explore function must return both a dict and a int."
@@ -381,6 +383,7 @@ parser = argparse.ArgumentParser(description="Validate files being added to syst
 parser.add_argument('--api', help="The API where the file is trying to be inserted.", action='store', required=True, metavar='api')
 parser.add_argument('--filename', help="Name of file inlcuding entire file path.", action='store', required=True, metavar='filename')
 parser.add_argument('--input_directory', help="Directory where necessary inputs are stored", action='store', required=True, metavar='input_directory')
+parser.add_argument('--filter_specs', help="Specifications for a used filter.", action='store', required=True, metavar='filter_specs')
 parser.add_argument('--output_directory', help='Directory where outputs are stored (type NA if there will be no outputs).', action='store', required=True, metavar='output_directory')
 args = parser.parse_args()
 
@@ -398,6 +401,7 @@ elif args.api.lower() == "filter":
 
 my_dir = args.input_directory
 output_directory = args.output_directory
+filter_specs = args.filter_specs
 
 errorMessage = ""
 errorMessage += str(find_imports(fileToCheck, desiredInterface))
@@ -411,4 +415,5 @@ else:
 	print("Error Log: ")
 	print(errorMessage)
 
-print(hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directory))
+print(hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directory, filter_specs))
+
