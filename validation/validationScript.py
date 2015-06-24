@@ -41,21 +41,13 @@ def find_imports(fileToCheck, desiredInterface):
 		else:
 			return ""
 	elif desiredInterface == 3:
-		if "IngestModule" not in importedList and asterikFound == False:
-			return "Missing the IngestModule input and * input, can be fixed using 'from ..ingest_utils import IngestModule' and 'from ..utils import *'.\n"
-		elif "IngestModule" in importedList and asterikFound == False:
-			return "Missing the * input, can be fixed using 'from ..utils import *'.\n"
-		elif "IngestModule" not in importedList and asterikFound == True:
-			return "Missing the IngestModule input, can be fixed using 'from ..filter_utils import IngestModule'.\n"
+		if "*" not in importedList:
+			return "Missing the * input, can be fixed using 'from dataloader.utils import *'.\n"
 		else:
 			return ""
 	elif desiredInterface == 4:
-		if "Filter" not in importedList and asterikFound == False:
-			return "Missing the Filter input and * input, can be fixed using 'from ..filter_utils import Filter' and from ..utils import *.\n"
-		elif "Filter" in importedList and asterikFound == False:
-			return "Missing the * input, can be fixed using 'from ..utils import *'.\n"
-		elif "Filter" not in importedList and asterikFound == True:
-			return "Missing the Filter input, can be fixed using 'from ..filter_utils import Filter'.\n"
+		if "*" not in importedList:
+			return "Missing the * input, can be fixed using 'from dataloader.utils import *'\n"
 		else:
 			return ""
 
@@ -222,7 +214,7 @@ def check_return_values(fileToCheck, desiredInterface):
 		else:
 			return ""
 	elif desiredInterface == 3:
-		if ("schema" not in listOfReturns and "schemas" not in listOfReturns) or "error" not in listOfReturns or "matrices" not in listOfReturns:
+		if ("schema" not in listOfReturns and "schemas" not in listOfReturns and "collection:ret" not in listOfReturns) or "error" not in listOfReturns or "matrices" not in listOfReturns:
 			return "Missing or incorrectly named return values.\n"
 		else:
 			return ""
@@ -273,7 +265,6 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		matrix = ""
 		nameOfSource = ""
 		filterOfMatrix = []
-		print exploreResult
 		for elem in exploreResult:
 			if type(elem) == dict:
 				for key in elem.keys():
@@ -298,14 +289,17 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 			'sourceName':nameOfSource,
 			'matrixTypes':[]
 		}
-		for elem in filterOfMatrix:
-			# posted_data['matrixFilters'].update({elem:{"classname":"DocumentLEAN","filter_id":"DocumentLEAN","parameters":[],"stage":"before","type":"extract"}}) #for text
-			# {"classname":"TweetDocumentLEAN","filter_id":"lean.python.TweetDocumentLEAN","parameters":[{"attrname":"include","name":"Include the following keywords","type":"input","value":""},{"attrname":"sent","value":"Yes"},{"attrname":"exclude","name":"Exclude the following keywords","type":"input","value":""},{"attrname":"lang","name":"Language","type":"input","value":"en"},{"attrname":"limit","name":"Limit","type":"input","value":"-1"},{"attrname":"start","name":"Start time","type":"input","value":str(self.starttime)},{"attrname":"end","name":"End time","type":"input","value":str(self.endtime)},{"attrname":"geo","name":"Geo","type":"input","value":""}],"stage":"before","type":"extract"}
-			posted_data['matrixFilters'].update({elem:{}})
-			posted_data['matrixFeatures'].append(elem)
-			posted_data['matrixFeaturesOriginal'].append(elem)
-		for elem in typeOfMatrix:
-			posted_data['matrixTypes'].append(elem)
+
+		# posted_data['matrixFilters'].update({filterOfMatrix[0]:{"classname":"DocumentLEAN","filter_id":"DocumentLEAN","parameters":[],"stage":"before","type":"extract"}}) #for Text
+
+
+		posted_data['matrixFilters'].update({filterOfMatrix[0]:{"classname":"TweetDocumentLEAN","filter_id":"TweetDocumentLEAN","parameters":[{"attrname":"include","name":"Include the following keywords","type":"input","value":""},{"attrname":"sent","value":"No"},{"attrname":"exclude","name":"Exclude the following keywords","type":"input","value":""},{"attrname":"lang","name":"Language","type":"input","value":""},{"attrname":"limit","name":"Limit","type":"input","value":"10"},{"attrname":"start","name":"Start time","type":"input","value":""},{"attrname":"end","name":"End time","type":"input","value":""},{"attrname":"geo","name":"Geo","type":"input","value":""}],"stage":"before","type":"extract"}}) #for Mongo
+
+		# posted_data['matrixFilters'].update({filterOfMatrix[0]:{}}) #for spreadsheet
+
+		posted_data['matrixFeatures'].append(filterOfMatrix[0])
+		posted_data['matrixFeaturesOriginal'].append(filterOfMatrix[0])
+		posted_data['matrixTypes'].append(typeOfMatrix[0])
 
 		secondToLastOccurence = my_dir.rfind("/", 0, my_dir.rfind("/"))
 		my_dir = my_dir[:secondToLastOccurence + 1]
@@ -328,10 +322,9 @@ def hard_type_check_return(fileToCheck, desiredInterface, my_dir, output_directo
 		for i in range(len(ingestResultList)):
 			typeListIngest.append(type(ingestResultList[i]))
 
-		if nameOfSource == "Spreadsheet":
-			for file in os.listdir(my_dir):
-				if len(file) > 6:
-					shutil.rmtree(my_dir + file + "/")
+		for file in os.listdir(my_dir):
+			if os.path.isdir(my_dir + file) and len(file) > 15:
+				shutil.rmtree(my_dir + file + "/")
 
 		if dict in typeListExplore and int not in typeListExplore:
 			specificErrorMessage += "Missing a int, explore function must return both a dict and a int."
