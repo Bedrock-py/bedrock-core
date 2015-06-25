@@ -23,7 +23,7 @@ if [ $1 = "-h" ]; then
 	echo "    opal install [name of opal to be installed]"
 	echo "    opal remove [name of opal to be removed]"
 	echo "    opal reload [name of opal to be reloaded]"
-	echo "		opal validate [name of opal to be validated]"
+	echo "    opal validate [name of opal to be validated]"
 	echo ""
 	echo "    opal install application [filepath for application json specification]"
 	echo "    opal remove application [filepath for application json specification]"
@@ -232,7 +232,7 @@ if [ $1 = "install" ]; then
 			f=$BEDROCK_DIR/$2/$f
 			FILE=$(basename $f)
 			MY_PATH=$(readlink -f $f)
-                        if [ ! -L $TARGET$FILE ]; then
+            if [ ! -L $TARGET$FILE ]; then
 			    echo "    linking: $MY_PATH"
 			    sudo ln -s $MY_PATH $TARGET
    			fi
@@ -248,10 +248,10 @@ if [ $1 = "install" ]; then
 		  f=$BEDROCK_DIR/$2/$f
 		  MY_PATH=$(readlink -f $f)
 		  FILE=$(basename $f)
-                  if [ ! -L $TARGET$FILE ]; then
-                      echo "    linking: $MY_PATH"
-                      sudo ln -s $MY_PATH $TARGET
-                  fi
+          if [ ! -L $TARGET$FILE ]; then
+              echo "    linking: $MY_PATH"
+              sudo ln -s $MY_PATH $TARGET
+          fi
 		  python configure.py --mode add --api $INTERFACE --filename $FILE
 		  fi
 		done	
@@ -302,14 +302,16 @@ elif [ $1 = "remove" ]; then
 		#iterate through the units and symlink/install
 		for f in $UNITS
 		do
-		  f="${f%\"}"
-		  f="${f#\"}"
-		  f=$BEDROCK_DIR/$2/$f
-		  MY_PATH=$(readlink -f $f)
-		  FILE=$(basename $f)
-		  echo "    unlinking: $MY_PATH"
-		  sudo rm $TARGET$FILE
-		  python configure.py --mode remove --api $INTERFACE --filename $FILE
+		  if ! [ "$f" = "\"\"" ]; then
+			  f="${f%\"}"
+			  f="${f#\"}"
+			  f=$BEDROCK_DIR/$2/$f
+			  MY_PATH=$(readlink -f $f)
+			  FILE=$(basename $f)
+			  echo "    unlinking: $MY_PATH"
+			  sudo rm $TARGET$FILE
+			  python configure.py --mode remove --api $INTERFACE --filename $FILE
+		  fi
 		done
 
 		sudo sed -e /$2/d -i installed_opals.txt
