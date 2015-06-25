@@ -119,38 +119,39 @@ else
 	input="$2" #input is whatever the normal input would be if not trying to validate
 fi
 
+if ! [ $2 = "application" ]; then
+	VALID_CONF=true
+	data=$(echo $OPALS | jq '.["'$input'"]') #data is set to the value of the config.json file
+	if [[ $data = "null" ]]; then
+		VALID_CONF=false
+	fi
 
-VALID_CONF=true
-data=$(echo $OPALS | jq '.["'$input'"]') #data is set to the value of the config.json file
-if [[ $data = "null" ]]; then
-	VALID_CONF=false
-fi
+	if [ "$VALID_CONF" = true ]; then 
+		HOST=$(echo $OPALS | jq '.["'$input'"]'.host)
+		HOST="${HOST%\"}"
+		HOST="${HOST#\"}"
+		REPO=$(echo $OPALS | jq '.["'$input'"]'.repo)
+		REPO="${REPO%\"}"
+		REPO="${REPO#\"}"
 
-if [ "$VALID_CONF" = true ]; then 
-	HOST=$(echo $OPALS | jq '.["'$input'"]'.host)
-	HOST="${HOST%\"}"
-	HOST="${HOST#\"}"
-	REPO=$(echo $OPALS | jq '.["'$input'"]'.repo)
-	REPO="${REPO%\"}"
-	REPO="${REPO#\"}"
+		SUPPORTS=$(echo $OPALS | jq '.["'$input'"]'.supports)
+		UNITS=$(echo $OPALS | jq '.["'$input'"]'.units)
+		API=$(echo $OPALS | jq '.["'$input'"]'.api)
+		API="${API%\"}"
+		API="${API#\"}"
+		INTERFACE=$(echo $OPALS | jq '.["'$input'"]'.interface)
+		INTERFACE="${INTERFACE%\"}"
+		INTERFACE="${INTERFACE#\"}"
 
-	SUPPORTS=$(echo $OPALS | jq '.["'$input'"]'.supports)
-	UNITS=$(echo $OPALS | jq '.["'$input'"]'.units)
-	API=$(echo $OPALS | jq '.["'$input'"]'.api)
-	API="${API%\"}"
-	API="${API#\"}"
-	INTERFACE=$(echo $OPALS | jq '.["'$input'"]'.interface)
-	INTERFACE="${INTERFACE%\"}"
-	INTERFACE="${INTERFACE#\"}"
+		SCRIPT=$(echo $OPALS | jq '.["'$input'"]'.installation_script)
 
-	SCRIPT=$(echo $OPALS | jq '.["'$input'"]'.installation_script)
+		SYSTEM=$(echo $OPALS | jq '.["'$input'"]'.system_dependencies)
 
-	SYSTEM=$(echo $OPALS | jq '.["'$input'"]'.system_dependencies)
-
-	TARGET=/var/www/bedrock/$API/opals/
-else
-	echo "ERROR: File does not have a valid configuration."
-	exit 0
+		TARGET=/var/www/bedrock/$API/opals/
+	else
+		echo "ERROR: File does not have a valid configuration."
+		exit 0
+	fi
 fi
 
 if [ $1 = "install" ]; then
