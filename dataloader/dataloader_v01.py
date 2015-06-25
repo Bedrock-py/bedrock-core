@@ -361,7 +361,7 @@ class Sources(Resource):
             '''
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
             col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
-            res_col = client[DATALOADER_DB_NAME][RESULTS]
+            res_col = client[DATALOADER_DB_NAME][RESULTS_COL_NAME]
 
             try:
                 matrices = col.find({'src_id':src_id})[0]['matrices']
@@ -718,7 +718,7 @@ class Sources(Resource):
 
                     shutil.rmtree(DATALOADER_PATH + src_id + '/' + mat_id)
 
-                    col = client[DATALOADER_DB_NAME][RESULTS]
+                    col = client[DATALOADER_DB_NAME][RESULTS_COL_NAME]
                     try:
                         col.remove({'src_id':mat_id})
                         shutil.rmtree(RESPATH + mat_id)
