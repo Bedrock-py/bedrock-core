@@ -23,7 +23,7 @@ if [ $1 = "-h" ]; then
 	echo "    opal install [name of opal to be installed]"
 	echo "    opal remove [name of opal to be removed]"
 	echo "    opal reload [name of opal to be reloaded]"
-	echo "    opal validate [name of opal to be validated]"
+	echo "	  opal validate [name of opal to be validated]"
 	echo ""
 	echo "    opal install application [filepath for application json specification]"
 	echo "    opal remove application [filepath for application json specification]"
