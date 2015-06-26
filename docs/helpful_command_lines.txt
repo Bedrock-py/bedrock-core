@@ -5,9 +5,9 @@ where https://github.gatech.edu/DiamondEye/analytics.git is the link, and de is 
 
 To open the DiamondEye webpage:
 1. cd into the diamondeye-bells-master repo
-2. type vagrant up 
-3. type vagrant ssh
-4. type sudo service apache2 reload
+2.  vagrant up 
+3.  vagrant ssh
+4.  sudo service apache2 reload
 5. Navigate to http://192.168.33.101:82 in the browser
 6.  Username: gtri
     Password: AAIB2015!
@@ -17,34 +17,34 @@ To add a file in analytics under vagrant, where the file is under …/de/validat
 0. make sure that the directory you sync is the one you do development in such as algorithms in the repo
     e.g., ../Analytics-Framework-GTRI_PROPRIETARY/analytics/python/Analytics/algorithms
 1. cd into the diamondeye-bells-master repo
-2. type vagrant up 
-3. type vagrant ssh
-4. type sudo service apache2 reload
-5. type cd /var/www/analytics-framework/
-6. type python configure.py --api analytics --filename de.blackAdder --mode add
+2.  vagrant up 
+3.  vagrant ssh
+4.  sudo service apache2 reload
+5.  cd /var/www/analytics-framework/
+6.  python configure.py --api analytics --filename de.blackAdder --mode add
     Note for this to work:
         Must have a method: get_classname() defined. look at other examples
         
 If the class metadata in an analytic file is modified, then:  
-7. type python configure.py --api analytics --filename de.analyticFileName --mode remove
-8. type python configure.py --api analytics --filename de.analyticFileName --mode add
-9. type sudo service apache2 reload
+7.  python configure.py --api analytics --filename de.analyticFileName --mode remove
+8.  python configure.py --api analytics --filename de.analyticFileName --mode add
+9.  sudo service apache2 reload
 for the changes to take in effect
 
 To check error of the UI run from Terminal:
-brain deadL 1. type sudo tail /var/log/apache2/error.log
+brain deadL 1. sudo tail /var/log/apache2/error.log
 alive: 2, sudo less /var/log/apache2/error.log
     shift f
     cntrl c
     q (for any less or more command)
 
 To install a package in vagrant:
-1. type sudo pip install package_name
+1.  sudo pip install package_name
    (the package is automatically searched, so no need to download it first nor cd to its downloaded path)
 
 To see the resulting labels from RTC from UI on the testing data set:
-1. type vim analytics/data/irisTest ID/rtcResult ID/assignments.csv
-2. type :q to exit vim
+1.  vim analytics/data/irisTest ID/rtcResult ID/assignments.csv
+2.  :q to exit vim
 
 
 NMF directory under vagrant:
@@ -52,11 +52,11 @@ NMF directory under vagrant:
 
 To halt vagrant:
 If the Terminal is under vagrant, then:
-1. type exit
-2. type vagrant halt
+1.  exit
+2.  vagrant halt
 To re-up vagrant:
-3. type vagrant up
-4. type vagrant ssh
+3.  vagrant up
+4.  vagrant ssh
 
 To do data analytics in DE
 1. click on data management
@@ -144,3 +144,28 @@ class InformationDistance(Algorithm):
         self.results = {'results.json': json.dumps(ID)}
 
 <<<<< end your interface >>>>>
+
+Working with opals
+from within the VM (after vagrant ssh)
+some example command lines from Ashley:
+vagrant@bedrock-base:~/bedrock/bedrock-core$ history | grep "opal"
+   25  opal install application applications/default.json
+   39  opal install application applications/default.json
+   46  opal install application applications/default.json
+   80  opal -h
+   81  opal remove application applications/default.json 
+   82  opal install application applications/default.json 
+   83  opal remove opal-analytics-clustering
+   84  opal install opal-analytics-clustering
+   86  opal install opal-analytics-qualitymeasures
+   89  history | grep "opal"
+
+Where to view opal contents:
+http://130.207.211.77/opalserver/api/0.1/#!/opals/get_analytics
+
+****Within the VM*****
+1. local repos that have new commits pushed to Bedrock are NOT automatically pulled by the VM
+2. Methods to make sure the VM directories are up to date with the repos:
+    2.1. go to each directory below the /home/bedrock directory and do 'git pull'
+    2.2. set up a synced folder in your Vagrantfile to each directory you want to
+            be the same as the corresponding git repo.
