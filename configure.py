@@ -201,8 +201,8 @@ if __name__=='__main__':
             try:
                 col.find({'workflow_id':args.filename})[0]
             except IndexError:
-                exec("import Workflows.work." + args.filename)
-                metadata = Workflows.workflows.get_metadata(args.filename)
+                exec("import workflows.opals." + args.filename)
+                metadata = workflows.utils.get_metadata(args.filename)
                 metadata['workflow_id'] = args.filename
                 col.insert(metadata)
                 meta = {key: value for key, value in metadata.items() if key != '_id'}
@@ -222,8 +222,8 @@ if __name__=='__main__':
             try:
                 col.find({'work_id':args.filename})[0]
             except IndexError:
-                exec("import Workflows.work." + args.filename)
-                metadata = Workflows.workflows.get_metadata(args.filename)
+                exec("import workflows.opals." + args.filename)
+                metadata = workflows.utils.get_metadata(args.filename)
                 metadata['work_id'] = args.filename
                 col.insert(metadata)
                 meta = {key: value for key, value in metadata.items() if key != '_id'}

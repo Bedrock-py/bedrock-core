@@ -18,3 +18,8 @@ ANALYTICS_DB_NAME = 'analytics'
 ANALYTICS_COL_NAME = 'analytics'
 RESULTS_COL_NAME = 'results'
 RESUTLS_PATH = '/var/www/bedrock/analytics/data/'
+
+WORKFLOWS_DB_NAME = 'workflows'
+WORKFLOWS_COL_NAME = 'workflows'
+WORKFLOWS_REGISTERED_NAME = 'registered'
+WORKFLOWS_OPALS = '/var/www/bedrock/workflows/opals/'

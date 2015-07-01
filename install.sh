@@ -7,6 +7,7 @@ sudo ln -s $DIR $TARGET
 echo "Bedrock installed in $TARGET..."
 
 sudo ln -s $TARGET/CONSTANTS.py $TARGET/dataloader/CONSTANTS.py
+sudo ln -s $TARGET/CONSTANTS.py $TARGET/workflows/CONSTANTS.py
 sudo ln -s $TARGET/CONSTANTS.py $TARGET/analytics/CONSTANTS.py
 sudo ln -s $TARGET/CONSTANTS.py $TARGET/visualization/CONSTANTS.py
 

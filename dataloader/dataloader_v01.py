@@ -186,12 +186,6 @@ class Sources(Resource):
         sources = []
         for src in cur:
             try:
-                # t = {}
-                # t['name'] = src['name']
-                # t['created'] = src['created']
-                # t['src_type'] = src['src_type']
-                # t['src_id'] = src['src_id']
-                # t['matrices_count'] = len(src['matrices'])
                 sources.append({key: value for key, value in src.items() if key != '_id' and key != 'stash'})
             except KeyError:
                 print src
@@ -844,89 +838,6 @@ class Sources(Resource):
 #                         return ('', 204)
 #             if not found:
 #                 return ('No resource at that URL.', 404)
-
-
-# @app.route('/sources/<src_name>/<mat_name>/', methods=['POST'])
-# def postSourcesNameName(src_name, mat_name):
-
-#     src_id = utils.getNewId()
-#     mat_id = utils.getNewId()
-#     t = utils.getCurrentTime()
-
-#     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-#     col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
-
-#     rootpath = DATALOADER_PATH  + src_id + '/'
-#     os.makedirs(rootpath)
-
-#     source = {}
-#     source['name'] = src_name
-#     source['host'] = socket.gethostbyname(socket.gethostname())
-#     source['rootdir'] = rootpath
-#     source['src_id'] = src_id
-#     source['src_type'] = "None"
-#     source['created'] = t
-#     source['matrices'] = []
-
-#     col.insert(source)
-
-#     response = {}
-#     response['name'] = src_name
-#     response['host'] = socket.gethostbyname(socket.gethostname())
-#     response['rootdir'] = rootpath
-#     response['src_id'] = src_id
-#     response['src_type'] = "None"
-#     response['created'] = t
-#     response['matrices_count'] = len(source['matrices'])
-
-
-#     storepath = rootpath + mat_id + '/'
-#     os.makedirs(storepath)
-
-#     matrix = {}
-#     matrix['id'] = mat_id
-#     matrix['rootdir'] = storepath
-#     matrix['src_id'] = src_id
-#     matrix['created'] = utils.getCurrentTime()
-#     matrix['name'] = mat_name
-#     matrix['mat_type'] = "None"
-#     matrix['outputs'] = []
-#     matrix['filters'] = []
-#     matrices = []
-#     for each in source['matrices']:
-#         matrices.append(each)
-#     matrices.append(matrix)
-#     col.update({'src_id':src_id}, { '$set': {'matrices': matrices} })
-
-
-#     return (jsonify( {'matrix': matrix} ), 201)
-
-
-# @app.route('/sources/<src_id>/<mat_id>/', methods=['PUT'])
-# def putSourcesIdId(src_id, mat_id):
-
-#     file = request.files['file']
-#     ext = re.split('\.', file.filename)[1]
-#     if not ext in ALLOWED_EXTENSIONS:
-#         return ('This filetype is not supported.', 415)
-
-#     FileLoader.saveFile(file, DATALOADER_PATH + src_id + '/' + mat_id + '/')
-
-#     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-#     col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
-#     matrix = col.find({'src_id':src_id})[0]['matrices'][0]
-#     if 'matrix' in file.filename:
-#         matrix['mat_type'] = ext
-#     outputs = []
-#     for each in matrix['outputs']:
-#         outputs.append(each)
-#     outputs.append(file.filename)
-#     matrix['outputs'] = outputs
-#     matrices = [matrix]
-#     col.update({'src_id':src_id}, { '$set': {'matrices': matrices} })
-
-
-#     return (jsonify( {'matrix': matrix} ), 201)
 
 
 

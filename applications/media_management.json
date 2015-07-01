@@ -1,0 +1,19 @@
+{
+	"opals": 	"opal-analytics-smallk 
+				opal-dataloader-ingest-instagram 
+				opal-dataloader-ingest-twitter 
+				opal-dataloader-ingest-rss 
+				opal-dataloader-ingest-twitter-followers 
+				opal-dataloader-filter-lean 
+				opal-visualization-barchart 
+				opal-visualization-heatmap 
+				opal-visualization-linechart-peakuse 
+				opal-visualization-popular 
+				opal-visualization-sentiment-topics 
+				opal-visualization-top-n 
+				opal-visualization-top-links 
+				opal-visualization-topics-trends 
+				opal-visualization-top-news 
+				opal-workflows-matrix-analytic 
+				opal-workflows-mysql-updates"
+}

@@ -17,24 +17,7 @@ from flask import stream_with_context, request, Response
 import pymongo, sys, json, os, socket, shutil, string, re
 from flask.ext import restful
 from flask.ext.restplus import Api, Resource, fields
-from Workflows import workflows
-
-DIRPATH = '/var/www/analytics-framework/dataloader/data/'
-RESPATH = '/var/www/analytics-framework/analytics/data/'
-WORKPATH = '/var/www/analytics-framework/workflows/data/'
-ALGDIR = '/var/www/analytics-framework/analytics/python/Analytics/algorithms/'
-MONGO_HOST = 'localhost'
-MONGO_PORT = 27017
-MONGO_DB_NAME = 'visualization'
-ALLOWED_EXTENSIONS = ['py']
-ANALYTCS_API = 'http://10.90.23.200:81/analytics/api/0.1/'
-DATALOADER_API = 'http://10.90.23.200:81/dataloader/api/0.1/'
-VIS = 'visualizations'
-MONGO_WORK_NAME = 'workflows'
-COL = 'registered'
-COL_MOD = 'modules'
-
-
+from CONSTANTS import *
 
 app = Flask(__name__)
 app.debug = True
@@ -55,7 +38,7 @@ class WorkflowModules(Resource):
         workflows_registered = []
 
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_WORK_NAME][COL_MOD]
+        col = client[WORKFLOWS_DB_NAME][WORKFLOWS_REGISTERED_NAME]
         cur = col.find()
         for c in cur:
             response = {key: value for key, value in c.items() if key != '_id'}
@@ -73,7 +56,7 @@ class Workflows(Resource):
         workflows_registered = []
 
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_WORK_NAME][COL]
+        col = client[WORKFLOWS_DB_NAME][WORKFLOWS_COL_NAME]
         cur = col.find()
         for c in cur:
             response = {key: value for key, value in c.items() if key != '_id' and key != 'stash'}
@@ -92,7 +75,7 @@ class Workflows(Resource):
         data = request.get_json()
 
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_WORK_NAME][COL]
+        col = client[WORKFLOWS_DB_NAME][WORKFLOWS_REGISTERED_NAME]
         
         rootpath = WORKPATH  + work_id + '/'
 
@@ -122,14 +105,14 @@ class Workflow(Resource):
 
         '''
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_WORK_NAME][COL]
+        col = client[WORKFLOWS_DB_NAME][WORKFLOWS_REGISTERED_NAME]
         try:
             work = col.find({'work_id':work_id})[0]
 
         except IndexError:
             return 'No resource at that URL.', 404
 
-        return workflows.toil(work['workflow_id'], work['parameters'], WORKPATH + work_id + '/')
+        return workflows.toil(work['workflow_id'], work['parameters'], WORKFLOWS_OPALS + work_id + '/')
 
     def patch(self, work_id):
         '''
@@ -137,21 +120,21 @@ class Workflow(Resource):
 
         '''
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_WORK_NAME][COL]
+        col = client[WORKFLOWS_DB_NAME][WORKFLOWS_REGISTERED_NAME]
         try:
             work = col.find({'work_id':work_id})[0]
 
         except IndexError:
             return 'No resource at that URL.', 404
 
-        workflows.update(work['workflow_id'], WORKPATH + work_id + '/')
+        workflows.update(work['workflow_id'], WORKFLOWS_OPALS + work_id + '/')
 
     def get(self, work_id):
         '''
         Returns the details of that workflow.
         '''         
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_WORK_NAME][COL]
+        col = client[WORKFLOWS_DB_NAME][WORKFLOWS_REGISTERED_NAME]
         try:
             work = col.find({'work_id':work_id})[0]
 
@@ -166,7 +149,7 @@ class Workflow(Resource):
         This will permanently remove this workflow from the system. USE CAREFULLY!
         '''
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[MONGO_WORK_NAME][COL]
+        col = client[WORKFLOWS_DB_NAME][WORKFLOWS_REGISTERED_NAME]
 
         try:
             col.remove({'work_id':work_id})
@@ -174,7 +157,7 @@ class Workflow(Resource):
         except IndexError:
             return 'No resource at that URL.', 404
         try:
-            shutil.rmtree(WORKPATH + work_id)
+            shutil.rmtree(WORKFLOWS_OPALS + work_id)
         except OSError:
             pass
 
