@@ -153,6 +153,27 @@ class IngestModules(Resource):
         
         return ingest
 
+    @ns_i.route('/<ingest_id>/')
+    class Ingest(Resource):
+        @api.doc(model='Ingest')
+        def get(self, ingest_id):
+            '''
+            '''
+            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+            col = client[DATALOADER_DB_NAME][INGEST_COL_NAME]
+
+            try:
+                src = col.find({'ingest_id':ingest_id})[0]
+
+            except IndexError:
+                return 'No resource at that URL', 401
+
+            else:
+                response = {key: value for key, value in src.items() if key != '_id'}
+
+                return response
+
+
 @ns_f.route('/')
 class Filters(Resource):
     @api.doc(model='Filter')
@@ -227,10 +248,10 @@ class Sources(Resource):
                     if matrix['id'] == matrix_id:
                         return send_from_directory(matrix['rootdir'],output_file, as_attachment=True, attachment_filename=file_download_name)
                         
-    @ns.route('/<name>/<ingest_id>/')
+    @ns.route('/<name>/<ingest_id>/<group_name>/')
     class NewSource(Resource):
         @api.doc(model='Source')
-        def put(self, name, ingest_id):
+        def put(self, name, ingest_id, group_name=""):
             '''
             Saves a new resource with a ID.
             Payload can be either a file or JSON structured configuration data. Returns the metadata for the new source.
@@ -287,6 +308,7 @@ class Sources(Resource):
             source['status'] = None
             source['count'] = 0
             source['stash'] = []
+            source['group_name'] = group_name
 
             col.insert(source)
 
@@ -328,6 +350,36 @@ class Sources(Resource):
 
             return explorable
 
+    @ns.route('/group/<group_name>/')
+    class Group(Resource):
+        @api.doc(model='Matrix')
+        def get(self, group_name):
+            '''
+            Returns a list of sources within a particular group.
+            '''
+
+            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+            col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
+            sources = col.find({'group_name':group_name})
+            response = [{key: value for key, value in src.items() if key != '_id'} for src in sources]
+
+            return response
+
+    @ns.route('/groups/')
+    class Groups(Resource):
+        @api.doc(model='Matrix')
+        def get(self):
+            '''
+            Returns a list of groups available.
+            '''
+
+            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+            col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
+            groups = col.aggregate([{"$group":{"_id": "$group_name"}}])
+            response = [src["_id"] for src in groups]
+
+            return response
+
     @ns.route('/<src_id>/')
     class Source(Resource):
         @api.doc(model='Matrix')
@@ -341,7 +393,7 @@ class Sources(Resource):
                 src = col.find({'src_id':src_id})[0]
 
             except IndexError:
-                return 'No resource at that URL. FGHIEQRGHIGHILAFSFS', 401
+                return 'No resource at that URL', 401
 
             else:
                 response = {key: value for key, value in src.items() if key != '_id'}
@@ -358,6 +410,7 @@ class Sources(Resource):
             res_col = client[DATALOADER_DB_NAME][RESULTS_COL_NAME]
 
             try:
+                src = col.find({'src_id':src_id})[0]
                 matrices = col.find({'src_id':src_id})[0]['matrices']
 
             except IndexError:
@@ -376,6 +429,8 @@ class Sources(Resource):
 
                     except IndexError:
                         pass
+
+                utils.delete(src)
 
                 col.remove({'src_id':src_id})
                 shutil.rmtree(DATALOADER_PATH + src_id)

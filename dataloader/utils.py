@@ -16,6 +16,8 @@ import numpy as np
 import json
 import uuid
 from datetime import datetime
+import pymongo
+from CONSTANTS import *
 
 
 def explore(ingest_id, filepath, filters):
@@ -73,6 +75,15 @@ def ingest(posted_data, src):
     mod = eval(objectname)() #create the object specified
     return mod.ingest(posted_data, src)
 
+def delete(src):
+    exec("import opals." + src['ingest_id'])
+    filename = "opals." + src['ingest_id']
+    classname = filename.split(".")[-1]
+    objectname = "opals." + src['ingest_id'] + '.' + classname
+    mod = eval(objectname)() #create the object specified
+    return mod.delete(src['rootdir'])
+
+
 def stream(ingest_id, filepath):#update for function 
     exec("import opals." + ingest_id)
     filename = "opals." + ingest_id
@@ -95,7 +106,7 @@ def update(ingest_id, filepath):#update for function
 def get_status(src_id):
 
     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-    col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+    col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
         status = col.find({'src_id':src_id})[0]['status']
         return status
@@ -105,7 +116,7 @@ def get_status(src_id):
 def update_status(src_id):
 
     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-    col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+    col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
         status = col.find({'src_id':src_id})[0]['status']
         col.update({'src_id':src_id}, {'$set':{'status': not status}})
@@ -116,7 +127,7 @@ def update_status(src_id):
 def get_count(src_id):
 
     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-    col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+    col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
         count = col.find({'src_id':src_id})[0]['count']
         return count
@@ -126,7 +137,7 @@ def get_count(src_id):
 def increment_count(src_id):
 
     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-    col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+    col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
         count = col.find({'src_id':src_id})[0]['count']
         col.update({'src_id':src_id}, {'$set':{'count': count+1}})
@@ -138,7 +149,7 @@ def increment_count(src_id):
 def get_stash(src_id):
 
     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-    col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+    col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
         vis = col.find({'src_id':src_id})[0]['stash']
         return vis
@@ -148,7 +159,7 @@ def get_stash(src_id):
 def set_stash(src_id, new):
 
     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-    col = client[MONGO_DB_NAME][MONGO_COL_NAME]
+    col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
         vis = col.find({'src_id':src_id})[0]['stash']
         col.update({'src_id':src_id}, { '$set': {'stash': new} })
@@ -283,3 +294,7 @@ class Ingest(object):
 
     def get_parameters_spec(self):
         return self.parameters_spec
+
+    def delete(self, rootpath):
+        return
+        
