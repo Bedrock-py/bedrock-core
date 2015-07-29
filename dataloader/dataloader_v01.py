@@ -494,19 +494,20 @@ class Sources(Resource):
                 return utils.explore(src['ingest_id'], filepath, filters)
 
 
-        # @ns.route('/<src_id>/custom/<param1>/')
+        @ns.route('/<src_id>/custom/<param1>/')
         # @ns.route('/<src_id>/custom/<param1>/<param2>/')
         # @ns.route('/<src_id>/custom/<param1>/<param2>/<param3>/')
         class Custom(Resource):
-            def get(self, src_id, param1=None, param2=None, param3=None):
+            def get(self, src_id, param1):
+#            def get(self, src_id, param1=None, param2=None, param3=None):
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
                 col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
                 try:
                     src = col.find({'src_id':src_id})[0]
                 except IndexError:
                     return 'No resource at that URL.', 404
-                filepath = src['rootdir'] + '/source/' 
-                return utils.custom(src['ingest_id'], filepath, param1=param1, param2=param2, param3=param3)
+                filepath = src['rootdir'] 
+                return utils.custom(src['ingest_id'], filepath, param1=param1)
 
             def post(self, src_id, param1=None, param2=None, param3=None):
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
@@ -515,9 +516,9 @@ class Sources(Resource):
                     src = col.find({'src_id':src_id})[0]
                 except IndexError:
                     return 'No resource at that URL.', 404
-                filepath = src['rootdir'] + '/source/' 
+                filepath = src['rootdir'] 
                 return utils.custom(src['ingest_id'], filepath, param1=param1, param2=param2, param3=param3, payload=request.get_json())
-        api.add_resource(Custom, '/<src_id>/custom/<param1>/', '/<src_id>/custom/<param1>/<param2>/', '/<src_id>/custom/<param1>/<param2>/<param3>/')
+        #api.add_resource(Custom, '/<src_id>/custom/<param1>/', '/<src_id>/custom/<param1>/<param2>/', '/<src_id>/custom/<param1>/<param2>/<param3>/')
 
 
         @ns.route('/<src_id>/stream/')
