@@ -494,179 +494,31 @@ class Sources(Resource):
                 return utils.explore(src['ingest_id'], filepath, filters)
 
 
-        @ns.route('/<src_id>/shame/')
-        class Shame(Resource):
-            def get(self, src_id):
-                client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                col = client[DATALOADER_DB_NAME]["instagram"]
-
-		try:
-                    limit = int(request.args.get('limit', '20'))
-                except:
-                    limit = 20
-
-		try:
-                    skip = int(request.args.get('skip', '0'))
-                except:
-                    skip = 0
-		
-                try:
-                    src = col.find({'src_id':src_id,'marked': {"$exists":False}},skip=skip,limit=limit).sort('_id',pymongo.ASCENDING)
-                except IndexError:
-                    return 'No resource at that URL.', 404
-
-		count = col.count({'marked': {"$exists":False}})
-
-                ans = []
-                for i in src:
-                   # i['mongo_time'] = str(i['mongo_time'])
-                    ans.append(i)
-                
-		obj = {"count":count,"data":ans}
-
-		resp = Response(dumps(obj),mimetype='application/json')
-		return resp
-
-        @ns.route('/<src_id>/shamemark/<img_id>')
-        class ShameMark(Resource):
-            def post(self, src_id, img_id):
-                client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                col = client[DATALOADER_DB_NAME]["instagram"]
-
-                try:
-		    print img_id
-                    src = col.update_many({'id':img_id}, {"$set": {"marked": True}})
-                except IndexError:
-                    return 'No resource at that URL.', 404
-
-
-        @ns.route('/<src_id>/shameshow/<option>')
-        class ShameShow(Resource):
-            def get(self, src_id, option):
+        # @ns.route('/<src_id>/custom/<param1>/')
+        # @ns.route('/<src_id>/custom/<param1>/<param2>/')
+        # @ns.route('/<src_id>/custom/<param1>/<param2>/<param3>/')
+        class Custom(Resource):
+            def get(self, src_id, param1=None, param2=None, param3=None):
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
                 col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
                 try:
                     src = col.find({'src_id':src_id})[0]
                 except IndexError:
                     return 'No resource at that URL.', 404
+                filepath = src['rootdir'] + '/source/' 
+                return utils.custom(src['ingest_id'], filepath, param1=param1, param2=param2, param3=param3)
 
-		try:
-                    limit = int(request.args.get('limit', '50'))
-                except:
-                    limit = 20
-
-		try:
-                    skip = int(request.args.get('skip', '0'))
-                except:
-                    skip = 0
-		
-                filepath = src['rootdir'] + 'source/conf.json'
-                ingest = utils.IngestModule()
-                ingest.initialize(filepath)
-                self.db = ingest.db
-                self.col = ingest.col
-                
-                col2 = client[self.db][self.col]
-		curs = col2.find({"otc_tag": option},skip=skip,limit=limit).sort('_id',pymongo.DESCENDING)
-		count = col2.count({"otc_tag": option})
-                ans = []
-                for i in curs:
-                    i['_id'] = str(i['_id'])
-                    ans.append(i)
-                return Response(dumps({"count": count, "data": ans}),mimetype='application/json')
-                
-        @ns.route('/<src_id>/shame/<option>/')
-        class ShameOption3(Resource):
-            def post(self, src_id, option):
+            def post(self, src_id, param1=None, param2=None, param3=None):
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
                 col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
                 try:
                     src = col.find({'src_id':src_id})[0]
                 except IndexError:
                     return 'No resource at that URL.', 404
+                filepath = src['rootdir'] + '/source/' 
+                return utils.custom(src['ingest_id'], filepath, param1=param1, param2=param2, param3=param3, payload=request.get_json())
+        api.add_resource(Custom, '/<src_id>/custom/<param1>/', '/<src_id>/custom/<param1>/<param2>/', '/<src_id>/custom/<param1>/<param2>/<param3>/')
 
-                filepath = src['rootdir'] + 'source/conf.json'
-                ingest = utils.IngestModule()
-                ingest.initialize(filepath)
-                self.db = ingest.db
-                self.col = ingest.col
-
-		instagram = request.json
-		instagram.pop("_id", None)
-		collection = client[self.db][self.col]
-		try:
-		  if option != 'discard':
-		    instagram["otc_tag"] = str(option)
-		    collection.insert(instagram)
-		  return Response(dumps({"msg": "success"}),mimetype='application/json')
-		except:
-		  return Response(dumps({"msg": "error"}),mimetype='application/json')
-
-
-        @ns.route('/<src_id>/tags/')
-        class GetTags(Resource):
-            def get(self, src_id):
-                client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
-                try:
-                    src = col.find({'src_id':src_id})[0]
-                except IndexError:
-                    return 'No resource at that URL.', 404
-
-                filepath = src['rootdir'] + 'source/conf.json'
-                ingest = utils.IngestModule()
-                ingest.initialize(filepath)
-                self.db = ingest.db
-                self.col = ingest.col
-
-		collection = client[self.db][self.col]
-		try:
-		  tags = collection.find().distinct("otc_tag")
-		  ans = []
-		  for i in tags:
-		    ans.append(i)
-		  return Response(dumps({"msg": "success", "data": ans}),mimetype='application/json')
-		except:
-		  return Response(dumps({"msg": "error"}),mimetype='application/json')
-
-
-        @ns.route('/instagram/<src_id>')
-        class Instagram(Resource):
-
-            def get(self,src_id):
-        		print request.json
-        		print "hello world"
-        		ret = str(urllib2.unquote(request.args['hub.challenge']))
-                        return Response(ret, mimetype='text/plain')
-            def post(self,src_id):
-                client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-                col = client['dataloader']['instagram']
-                col.ensure_index('src_id')
-
-                for j in request.json:
-                    if j['object'] == 'tag':
-                            gram = requests.get("https://api.instagram.com/v1/tags/" + j['object_id'] + "/media/recent/?client_id=70788f81c3cc4b599cac187df6de81b3").json()
-                            gram['object'] = 'tag'
-                    elif j['object'] == 'geography':
-                            gram = requests.get("https://api.instagram.com/v1/geographies/" + j['object_id'] + "/media/recent?client_id=70788f81c3cc4b599cac187df6de81b3").json()
-                            gram['object'] = 'geography'
-                    else:
-                            print "Something nono"
-                            return "YOLO SWAG"
-
-                    for x in gram['data']:
-                    	x['src_id'] = src_id
-			x['sub_id'] = j['subscription_id']
-			x['type'] = "Instagram"
-		        col.insert(x)
-
-                return "Response"
-
-        @ns.route('/subs/')
-        class IgnoreMe(Resource):
-            def get(self):
-                    r = requests.get("https://api.instagram.com/v1/subscriptions?client_secret=33af20fcd6ff4f70b0cf05f41b32bd34&client_id=70788f81c3cc4b599cac187df6de81b3").content
-                    return r
 
         @ns.route('/<src_id>/stream/')
         class Stream(Resource):
@@ -836,63 +688,3 @@ class Sources(Resource):
                                 return response
 
                         return 'No resource at that URL.', 404
-
-
-
-# #applies a certain matrix's set of filters to one or more vectors
-# #and returns the preprocessed vector(s) OR
-# #updates the stored matrix with the new vector(s) and returns it/them
-# @app.route('/sources/<src_id>/<mat_id>/<result>/', methods=['PATCH'])
-# @app.route('/sources/<src_id>/<mat_id>/', methods=['PATCH'])
-# def patchSourcesIdId(src_id, mat_id, result=''):
-
-#     if result == '':
-#         return_data = False
-#     elif result == 'return':
-#         return_data = True
-#     #assumption: the user has sent a two dimensional array of the data
-#     #each subarray is a column
-#     try:
-#         data = request.get_json()['data']
-
-#     except KeyError:
-#         return ('Posted data is invalid.', 400)
-
-#     else:
-#         if not isinstance(data, list):
-#             return ('Posted data is invalid.', 400)
-
-#         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-#         col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
-#         try:
-#             src = col.find({'src_id':src_id})[0]
-
-#         except IndexError:
-#             return ('No resource at that URL.', 404)
-
-#         else:
-#             matrices = src['matrices']
-#             found = False
-#             for matrix in matrices:
-#                 if matrix['id'] == mat_id:
-#                     found = True
-#                     if matrix['mat_type'] == 'csv':
-#                         storepath = src['rootdir'] + mat_id + '/'
-#                         error, result = CSVLoader.update(storepath, matrix['filters'], data, return_data)
-
-#                     else:
-#                         pass #TODO add other types
-
-#                     if error:
-#                         return ('Unable to update resource.', 406)
-
-#                     elif return_data:
-#                         return jsonify({'stored':result})
-                    
-#                     else:
-#                         return ('', 204)
-#             if not found:
-#                 return ('No resource at that URL.', 404)
-
-
-

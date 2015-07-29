@@ -29,6 +29,15 @@ def explore(ingest_id, filepath, filters):
     mod.initialize_filters(filters)
     return mod.explore(filepath)
 
+def custom(ingest_id, filepath, param1=None, param2=None, param3=None, payload=None):
+    exec("import opals." + ingest_id)
+    filename = "opals." + ingest_id
+    classname = filename.split(".")[-1]
+    objectname = "opals." + ingest_id + '.' + classname
+    mod = eval(objectname)() #create the object specified
+    return mod.custom(filepath, param1=param1, param2=param2, param3=param3, payload=payload)
+
+
 def initialize(filter, parameters):
     #options can be specific and unique for each filter
     for each in parameters:
