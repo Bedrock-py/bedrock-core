@@ -493,21 +493,40 @@ class Sources(Resource):
 
                 return utils.explore(src['ingest_id'], filepath, filters)
 
-
-        @ns.route('/<src_id>/custom/<param1>/')
-        # @ns.route('/<src_id>/custom/<param1>/<param2>/')
-        # @ns.route('/<src_id>/custom/<param1>/<param2>/<param3>/')
-        class Custom(Resource):
-            def get(self, src_id, param1):
-#            def get(self, src_id, param1=None, param2=None, param3=None):
+        @ns.route('/<src_id>/custom/<param1>/<param2>/')
+        class Custom_2(Resource):
+            def get(self, src_id, param1, param2, param3=None):
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
                 col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
                 try:
                     src = col.find({'src_id':src_id})[0]
                 except IndexError:
                     return 'No resource at that URL.', 404
-                filepath = src['rootdir'] 
-                return utils.custom(src['ingest_id'], filepath, param1=param1)
+                filepath = src['rootdir']
+                return utils.custom(src['ingest_id'], filepath, param1=param1, param2=param2, param3=param3, request=request.args)
+
+            def post(self, src_id, param1=None, param2=None, param3=None):
+                client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+                col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
+                try:
+                    src = col.find({'src_id':src_id})[0]
+                except IndexError:
+                    return 'No resource at that URL.', 404
+                filepath = src['rootdir']
+                return utils.custom(src['ingest_id'], filepath, param1=param1, param2=param2, param3=param3, payload=request.get_json())
+
+
+        @ns.route('/<src_id>/custom/<param1>/')
+        class Custom_1(Resource):
+            def get(self, src_id, param1):
+                client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+                col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
+                try:
+                    src = col.find({'src_id':src_id})[0]
+                except IndexError:
+                    return 'No resource at that URL.', 404
+                filepath = src['rootdir']
+                return utils.custom(src['ingest_id'], filepath, param1=param1, request=request.args)
 
             def post(self, src_id, param1=None, param2=None, param3=None):
                 client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
@@ -518,7 +537,6 @@ class Sources(Resource):
                     return 'No resource at that URL.', 404
                 filepath = src['rootdir'] 
                 return utils.custom(src['ingest_id'], filepath, param1=param1, param2=param2, param3=param3, payload=request.get_json())
-        #api.add_resource(Custom, '/<src_id>/custom/<param1>/', '/<src_id>/custom/<param1>/<param2>/', '/<src_id>/custom/<param1>/<param2>/<param3>/')
 
 
         @ns.route('/<src_id>/stream/')
