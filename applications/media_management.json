@@ -3,7 +3,6 @@
 				opal-dataloader-ingest-instagram 
 				opal-dataloader-ingest-twitter 
 				opal-dataloader-ingest-rss 
-				opal-dataloader-ingest-twitter-followers 
 				opal-dataloader-filter-lean 
 				opal-visualization-barchart 
 				opal-visualization-heatmap 

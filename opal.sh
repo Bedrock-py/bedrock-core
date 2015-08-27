@@ -7,7 +7,21 @@ if [ -z "$BEDROCK_DIR" ]; then
     BEDROCK_DIR=~/bedrock/
 fi 
 
-if [ $1 = "-h" ]; then
+if [ -z $1 ]; then
+    echo "Use this script to install, remove, reload, or validate opals or to install and remove applications:"
+    echo ""
+    echo "    opal install [name of opal to be installed]"
+    echo "    opal remove [name of opal to be removed]"
+    echo "    opal reload [name of opal to be reloaded]"
+    echo "    opal validate [name of opal to be validated]"
+    echo ""
+    echo "    opal install application [filepath for application json specification]"
+    echo "    opal remove application [filepath for application json specification]"
+    echo ""
+    exit 0
+fi
+
+if [[ $1 = "-h" ]]; then
     echo "Use this script to install, remove, reload, or validate opals or to install and remove applications:"
     echo ""
     echo "    opal install [name of opal to be installed]"
@@ -20,7 +34,7 @@ if [ $1 = "-h" ]; then
     echo ""
     exit 0
 
-elif [ $1 = "reset" ]; then
+elif [[ $1 = "reset" ]]; then
         if [ -z $2 ]; then
             echo "Resetting bedrock..."
 
@@ -50,7 +64,7 @@ elif [ $1 = "reset" ]; then
         fi
         exit 0
 
-elif [ $1 = "clean" ]; then
+elif [[ $1 = "clean" ]]; then
     if [ -z $2 ]; then
         echo "Cleaning bedrock..."
 
@@ -78,7 +92,7 @@ elif [ $1 = "clean" ]; then
     fi
     exit 0
 
-elif [ $1 = "list" ]; then
+elif [[ $1 = "list" ]]; then
 
     if [ $2 = "installed" ]; then
         cat installed_opals.txt
@@ -110,7 +124,7 @@ fi
 # fi
 
 
-if ! [ $2 = "application" ]; then
+if ! [[ $2 = "application" ]]; then
 
     #see if the directory is there
     #if not, ping the server for metadata and pull down the repo
@@ -156,7 +170,7 @@ if ! [ $2 = "application" ]; then
     TARGET=/var/www/bedrock/$API/opals/
 fi
 
-if [ $1 = "install" ]; then
+if [[ $1 = "install" ]]; then
 
     if [ $2 = "application" ]; then
 
@@ -244,7 +258,7 @@ if [ $1 = "install" ]; then
     echo $2 >> installed_opals.txt
 
 
-elif [ $1 = "remove" ]; then
+elif [[ $1 = "remove" ]]; then
     if [ $2 = "application" ]; then
 
         echo "Removing application $3..."
@@ -297,7 +311,7 @@ elif [ $1 = "remove" ]; then
 
 
 
-elif [ $1 = "reload" ]; then
+elif [[ $1 = "reload" ]]; then
     echo "Reloading $2..."
 
     #iterate through the units and symlink/install
@@ -310,7 +324,7 @@ elif [ $1 = "reload" ]; then
       python configure.py --mode reload --api $INTERFACE --filename $FILE
     done    
 
-elif [ $1 = "validate" ]; then
+elif [[ $1 = "validate" ]]; then
     if [ "$#" -ne 7 ]; then #there must be 5 arguments following opal.sh
         echo "ERROR: validate must take exactly three arguments: "
         echo "      --filename [absolute path for the location of the file]"

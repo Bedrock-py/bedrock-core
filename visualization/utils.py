@@ -111,3 +111,7 @@ class Visualization(object):
 
     def get_parameters_spec(self):
         return self.parameters_spec
+
+    def initialize(self, inputs):
+        # this is for loading in data from filepaths provided by the UI
+        pass

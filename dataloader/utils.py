@@ -18,6 +18,8 @@ import uuid
 from datetime import datetime
 import pymongo
 from CONSTANTS import *
+import sys
+import traceback
 
 
 def explore(ingest_id, filepath, filters):
@@ -36,7 +38,6 @@ def custom(ingest_id, filepath, param1=None, param2=None, param3=None, payload=N
     objectname = "opals." + ingest_id + '.' + classname
     mod = eval(objectname)() #create the object specified
     return mod.custom(filepath, param1=param1, param2=param2, param3=param3, payload=payload, request=request)
-
 
 def initialize(filter, parameters):
     #options can be specific and unique for each filter
@@ -112,9 +113,10 @@ def update(ingest_id, filepath):#update for function
     mod = eval(objectname)() #create the object specified
     return mod.update(filepath)
 
-def get_status(src_id):
+def get_status(src_id, client=None):
 
-    client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+    if not client:
+        client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
     col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
         status = col.find({'src_id':src_id})[0]['status']
@@ -122,9 +124,9 @@ def get_status(src_id):
     except IndexError:
         return False
 
-def update_status(src_id):
-
-    client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+def update_status(src_id, client=None):
+    if not client:
+        client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
     col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
         status = col.find({'src_id':src_id})[0]['status']
@@ -133,9 +135,9 @@ def update_status(src_id):
     except IndexError:
         pass
 
-def get_count(src_id):
-
-    client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+def get_count(src_id, client=None):
+    if not client:
+        client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
     col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
         count = col.find({'src_id':src_id})[0]['count']
@@ -143,9 +145,9 @@ def get_count(src_id):
     except IndexError:
         return 0
 
-def increment_count(src_id):
-
-    client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+def increment_count(src_id, client=None):
+    if not client:
+        client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
     col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
         count = col.find({'src_id':src_id})[0]['count']
@@ -196,7 +198,46 @@ def setUpDirectoryMatrix(src_id):
     rootpath = DIRPATH + src_id + '/' + dirName + '/'
     os.makedirs(rootpath, 777)
     return rootpath, dirName
-    
+
+def extractSchemaFromListOfJSON(samples):
+    #initialize return list
+    schema = []
+    #extract the field names
+    fields = [x for x in samples[0].keys()]
+    #for each field
+    for i in range(len(fields)):
+        # represents a single column/field
+        field = {} 
+        examples = []
+        for j in range(len(samples)):
+            #possible for a particular sample to have nonstandard fields
+            try:
+                val = samples[j][fields[i]]
+            except KeyError:
+                val = '' 
+            examples.append((str(val)))
+        # see if the first example is numeric
+        try:
+            float(examples[0])
+            field['type'] = ['Numeric']
+        # must be string
+        except (ValueError,TypeError):
+            field['type'] = ['String']
+        
+        #give it a label
+        field['key'] = field['key_usr'] = fields[i]
+        #set the examples
+        field['examples'] = examples
+        #set a fake range
+        field['range'] = [-1,-1]
+        #set some suggestions
+        field['suggestions'] = field['options'] = self.get_filters(field['type'][0])
+        field['suggestion'] = self.get_best_filter(field['type'][0], fields[i], examples[0])
+        #add to schema, then repeat for next column
+        schema.append(field)
+        return schema
+
+
 def check(filter_id, name, col):
     exec("import opals." + filter_id)
     filename = "opals." + filter_id
@@ -246,12 +287,22 @@ class Ingest(object):
     def __init__(self):
         pass
 
+    def update(self, rootpath):
+        src_id = rootpath.split('/')[-2]
+        update_status(src_id)
+
     def initialize(self, conf_filepath):
         with open(conf_filepath) as json_data:
             data = json.loads(json_data.read())
         for each in data:
             setattr(self, each['attrname'], each['value'])
 
+
+    def explore(self, filepath):
+        return {}, 200
+
+    def ingest(self, posted_data, src):
+        return False, []
 
     def initialize_filters(self, filters):
         self.string_filters_id = []
@@ -270,6 +321,81 @@ class Ingest(object):
         #print self.string_filters
             # elif filt['input'] == 'Float':
             #     self.float_filters.append({key: value for key, value in filt.items() if key != '_id'})
+
+    def apply_before_filters(self, posted_data, src):
+        matrices = []
+        conf = {}
+        configfile = src['rootdir'] + 'source/conf.json'
+        try:
+            with open(configfile) as json_data:
+                data = json.loads(json_data.read())
+                for each in data:
+                    conf[each['attrname']] = each['value']
+        except:
+            pass # must not be a config file
+        for field, filt in posted_data['matrixFilters'].items():
+            if len(filt) > 0:
+                if filt['stage'] == 'before':
+                    if filt['type'] == 'extract':
+                        #create new matrix metadata
+                        conf['mat_id'] = getNewId()
+                        conf['storepath'] = src['rootdir'] + conf['mat_id'] + '/'
+                        conf['src_id'] = src['src_id']
+                        conf['name'] = posted_data['matrixName']
+                        val = self.apply_filter(filt['filter_id'], filt['parameters'], conf)
+                        if val != None:
+                            matrices.append( val )
+                        posted_data['matrixFilters'].pop(field, None)
+                    elif filt['type'] == 'convert':
+                        pass
+                    elif filt['type'] == 'add':
+                        pass
+        return matrices, posted_data['matrixFilters']
+
+    def apply_after_filters(self, maps, posted_data, matrices):
+        # for i, feature in enumerate(posted_data['matrixFeaturesOriginal']):
+        #     if len(posted_data['matrixFilters'][feature]) > 0: # filters were selected
+        #         filt = posted_data['matrixFilters'][feature]
+        #         if filt['stage'] == 'after':
+        #             if filt['type'] == 'extract':
+        #                 conf = {}
+        #                 conf['values'] = col
+        #                 conf['storepath'] = storepath
+        #                 val = self.apply_filter(filt['filter_id'], filt['parameters'], conf)
+        #                 if val != None:
+        #                     matrices.append( val )
+        #                 # posted_data['matrixFilters'].pop(feature, None)
+        #                 posted_data['matrixFeatures'].remove(feature)
+        #                 posted_data['matrixFeaturesOriginal'].remove(feature)
+        #                 filter_outputs.append('truth_labels.csv')
+        #             elif filt['type'] == 'convert':
+        #                 col, posted_data['matrixTypes'][i] = self.apply_filter(filt['filter_id'], filt['parameters'], col) 
+        #                 add_field(maps, posted_data['matrixFeatures'][i], col, posted_data['matrixTypes'][i])
+        #             elif filt['type'] == 'add':
+        #                 add_field(maps, posted_data['matrixFeatures'][i], col, posted_data['matrixTypes'][i])
+        #     else:
+        #         add_field(maps, posted_data['matrixFeatures'][i], col, posted_data['matrixTypes'][i])
+        additions = []
+        filt = Filter()
+        for i, feature in enumerate(matrixFeatures):
+            # apply filter from matrixFilters here
+            filters = matrixFilters[feature]
+            if 'filter' in filters.keys():
+                if filt.set_filter(filters['filter']):
+                    filt_type = filt.get_type()
+                    if filt_type == 'AddFilter':
+                        if isinstance(maps[feature], list):
+                            additions.extend(filt.apply_filter(maps[feature]))
+                        else:
+                            additions.extend(filt.apply_filter(maps[feature]['indexToLabel'], values=maps[feature]['values']))
+
+                    elif filt_type == 'ConvertFilter':
+                        if isinstance(maps[feature], list):
+                            maps[feature], matrixTypes[i] = filt.apply_filter(maps[feature])
+                        else:
+                            maps[feature]['indexToLabel'], matrixTypes[i] = filt.apply_filter(maps[feature]['indexToLabel']) #think through this...
+        # if any features were added via filters, process them now
+        processAdditions(maps, additions, matrixFeatures)
 
 
     def get_filters(self, type_name):
@@ -306,4 +432,6 @@ class Ingest(object):
 
     def delete(self, rootpath):
         return
-        
+
+
+
