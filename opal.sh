@@ -309,8 +309,6 @@ elif [[ $1 = "remove" ]]; then
 
     fi
 
-
-
 elif [[ $1 = "reload" ]]; then
     echo "Reloading $2..."
 
@@ -323,6 +321,7 @@ elif [[ $1 = "reload" ]]; then
       FILE=$(basename $f)
       python configure.py --mode reload --api $INTERFACE --filename $FILE
     done    
+    sudo service apache2 reload
 
 elif [[ $1 = "validate" ]]; then
     if [ "$#" -ne 7 ]; then #there must be 5 arguments following opal.sh
