@@ -26,6 +26,7 @@ from bson.objectid import ObjectId
 import requests
 import urllib2
 from CONSTANTS import *
+import traceback
 
 app = Flask(__name__)
 app.debug = True
@@ -256,70 +257,72 @@ class Sources(Resource):
             Saves a new resource with a ID.
             Payload can be either a file or JSON structured configuration data. Returns the metadata for the new source.
             '''
-            src_id = utils.getNewId()
-            t = utils.getCurrentTime()
-            conn_info = request.get_json()
-            if conn_info == None:
-                file = request.files['file']
-                ext = re.split('\.', file.filename)[1]
-                # if not ext in ALLOWED_EXTENSIONS:.
-
-                #     return ('This filetype is not supported.', 415)
-
-                if 'zip' in file.filename:
-                    src_type = 'zip'
-                else:
-                    src_type = 'file'
-
-                rootpath = DATALOADER_PATH + src_id + '/source/'
-                filename = secure_filename(file.filename)
-                if not os.path.exists(rootpath):
-                    os.makedirs(rootpath, 0775)
-                filepath = os.path.join(rootpath, filename)
-                file.save(filepath)
-            
-            else:
+            try:
+                src_id = utils.getNewId()
+                t = utils.getCurrentTime()
                 conn_info = request.get_json()
+                # conn_info = request.get_json(force=True)
+                if conn_info == None:
+                    file = request.files['file']
+                    ext = re.split('\.', file.filename)[1]
+                    # if not ext in ALLOWED_EXTENSIONS:.
 
-                src_type = 'conf'
-                dirOriginal = DATALOADER_PATH + src_id + '/source/'
+                    #     return ('This filetype is not supported.', 415)
 
-                os.makedirs(dirOriginal, 0775)
-                filepath = os.path.join(dirOriginal, 'conf.json')
+                    if 'zip' in file.filename:
+                        src_type = 'zip'
+                    else:
+                        src_type = 'file'
 
-                with open(filepath, 'w') as outfile:
-                    json.dump(conn_info, outfile)
+                    rootpath = DATALOADER_PATH + src_id + '/source/'
+                    filename = secure_filename(file.filename)
+                    if not os.path.exists(rootpath):
+                        os.makedirs(rootpath, 0775)
+                    filepath = os.path.join(rootpath, filename)
+                    file.save(filepath)
+                
+                else:
+                    src_type = 'conf'
+                    dirOriginal = DATALOADER_PATH + src_id + '/source/'
 
+                    os.makedirs(dirOriginal, 0775)
+                    filepath = os.path.join(dirOriginal, 'conf.json')
 
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
+                    with open(filepath, 'w') as outfile:
+                        json.dump(conn_info, outfile)
 
-            rootpath = DATALOADER_PATH  + src_id + '/'
+                client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+                col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
 
-            source = {}
-            source['name'] = name
-            source['host'] = [ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")][-1]
-            source['rootdir'] = rootpath
-            source['src_id'] = src_id
-            source['src_type'] = src_type
-            source['created'] = t
-            source['matrices'] = []
-            source['ingest_id'] = ingest_id
-            source['status'] = None
-            source['count'] = 0
-            source['stash'] = []
-            source['group_name'] = group_name
+                rootpath = DATALOADER_PATH  + src_id + '/'
 
-            col.insert(source)
+                source = {}
+                source['name'] = name
+                source['host'] = [ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")][-1]
+                source['rootdir'] = rootpath
+                source['src_id'] = src_id
+                source['src_type'] = src_type
+                source['created'] = t
+                source['matrices'] = []
+                source['ingest_id'] = ingest_id
+                source['status'] = None
+                source['count'] = 0
+                source['stash'] = []
+                source['group_name'] = group_name
 
-            response = {}
-            response['name'] = name
-            response['host'] = [ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")][-1]
-            response['rootdir'] = rootpath
-            response['src_id'] = src_id
-            response['src_type'] = src_type
-            response['created'] = t
-            response['matrices_count'] = len(source['matrices'])
+                col.insert(source)
+
+                response = {}
+                response['name'] = name
+                response['host'] = [ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")][-1]
+                response['rootdir'] = rootpath
+                response['src_id'] = src_id
+                response['src_type'] = src_type
+                response['created'] = t
+                response['matrices_count'] = len(source['matrices'])
+            except:
+                tb = traceback.format_exc()
+                return tb, 406
 
             return response, 201
 
@@ -444,28 +447,30 @@ class Sources(Resource):
             Generate a matrix from the source stored at that ID.
             Returns metadata for that matrix.
             '''
-            posted_data = request.get_json(force=True)
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
-
             try:
-                src = col.find({'src_id':src_id})[0]
+                posted_data = request.get_json(force=True)
+                client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+                col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
 
-            except IndexError:
-                return 'No resource at that URL.', 404
+                try:
+                    src = col.find({'src_id':src_id})[0]
 
-            error, matricesNew = utils.ingest(posted_data, src)
+                except IndexError:
+                    return 'No resource at that URL.', 404
 
-            if error:
-                return 'Unable to create matrix.', 406
+                error, matricesNew = utils.ingest(posted_data, src)
 
-            matrices = []
-            for each in src['matrices']:
-                matrices.append(each)
-            matrices.extend(matricesNew)
-            col.update({'src_id':src_id}, { '$set': {'matrices': matrices} })
+                if error:
+                    return 'Unable to create matrix.', 406
 
-
+                matrices = []
+                for each in src['matrices']:
+                    matrices.append(each)
+                matrices.extend(matricesNew)
+                col.update({'src_id':src_id}, { '$set': {'matrices': matrices} })
+            except:
+                tb = traceback.format_exc()
+                return tb, 406
             return matricesNew, 201
 
 

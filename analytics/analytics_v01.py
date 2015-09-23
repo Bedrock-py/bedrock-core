@@ -23,8 +23,8 @@ from flask.ext.restplus import Api, Resource, fields
 from datetime import datetime
 import subprocess
 from multiprocessing import Process, Queue
-# from ANALYTICS_CONSTANTS import *
 from CONSTANTS import *
+import traceback
 
 ALLOWED_EXTENSIONS = ['py']
 
@@ -154,31 +154,34 @@ class Analytics(Resource):
         '''
         Add a new analytic via file upload
         '''
-        # analytic_id = 'alg' + utils.getNewId()
-        time = datetime.now()
-        # make the id more meaningful
-        file = request.files['file']
-        ext = re.split('\.', file.filename)[1]
-        if not ext in ALLOWED_EXTENSIONS:
-            return 'This filetype is not supported.', 415
+        try:
+            time = datetime.now()
+            # make the id more meaningful
+            file = request.files['file']
+            ext = re.split('\.', file.filename)[1]
+            if not ext in ALLOWED_EXTENSIONS:
+                return 'This filetype is not supported.', 415
 
-        #save the file
-        filename = secure_filename(file.filename)
-        name = re.split('\.', filename)[0]
-        analytic_id = name + str(time.year) + str(time.month) + str(time.day) + str(time.hour) + str(time.minute) + str(time.second)
-        filepath = ANALYTICS_OPALS + analytic_id + '.py'
-        file.save(filepath)
+            #save the file
+            filename = secure_filename(file.filename)
+            name = re.split('\.', filename)[0]
+            analytic_id = name + str(time.year) + str(time.month) + str(time.day) + str(time.hour) + str(time.minute) + str(time.second)
+            filepath = ANALYTICS_OPALS + analytic_id + '.py'
+            file.save(filepath)
 
-        #get the metadata from the file
-        metadata = utils.get_metadata(analytic_id)
-        metadata['analytic_id'] = analytic_id
+            #get the metadata from the file
+            metadata = utils.get_metadata(analytic_id)
+            metadata['analytic_id'] = analytic_id
 
 
-        client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
 
-        col.insert(metadata)
-        meta = {key: value for key, value in metadata.items() if key != '_id'}
+            col.insert(metadata)
+            meta = {key: value for key, value in metadata.items() if key != '_id'}
+        except:
+            tb = traceback.format_exc()
+            return tb, 406
 
         return meta, 201
 
@@ -427,18 +430,24 @@ class Analytics(Resource):
 
             #run analysis
             queue = Queue()
-            # raise Exception(utils)
-            p = Process(target=utils.run_analysis, args=(queue, analytic_id, parameters, inputs, storepath, name))
-            p.start()
-            p.join() # this blocks until the process terminates
-            outputs = queue.get()
-            if outputs != None:
+            try:
+                #single process for now
+                utils.run_analysis(queue, analytic_id, parameters, inputs, storepath, name)
+                
+                #multiprocess solution from before
+                # p = Process(target=utils.run_analysis, args=(queue, analytic_id, parameters, inputs, storepath, name))
+                # p.start()
+                # p.join() # this blocks until the process terminates
+                outputs = queue.get()
+            except:
+                tb = traceback.format_exc()
+                return tb, 406
 
+            if outputs != None:
                 #store metadata
                 res_col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
                 try:
                     src = res_col.find({'src_id':mat_id})[0]
-
                 except IndexError:
                     src = {}
                     src['rootdir'] = RESUTLS_PATH + mat_id + '/'
@@ -467,11 +476,9 @@ class Analytics(Resource):
 
                 return res, 201
             else:
-                out = subprocess.call('tail /var/www/bedrock/conf/error.log > /var/www/bedrock/error.txt', shell=True)
-                # out = subprocess.call("sed -i 's/\[[a-zA-Z].*[0-9]\]//g' /var/www/bedrock/error.txt", shell=True)                    output.write(out)
-                with open('/var/www/bedrock/error.txt') as out:
-                    outcontent = out.read()
-                return outcontent, 406
+                tb = traceback.format_exc()
+                return tb, 406
+
 
         @api.doc(params={'payload': 'Must be list of data to have classified.'}, responses={201: 'Success', 406: 'Error', 404: 'No resource at that URL'})
         def patch(self, analytic_id):
