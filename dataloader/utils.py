@@ -322,7 +322,7 @@ class Ingest(object):
             # elif filt['input'] == 'Float':
             #     self.float_filters.append({key: value for key, value in filt.items() if key != '_id'})
 
-    def apply_before_filters(self, posted_data, src):
+    def apply_before_filters(self, posted_data, src, additional_params={}):
         matrices = []
         conf = {}
         configfile = src['rootdir'] + 'source/conf.json'
@@ -333,6 +333,8 @@ class Ingest(object):
                     conf[each['attrname']] = each['value']
         except:
             pass # must not be a config file
+        for key,value in additional_params.iteritems():
+            conf[key] = value
         for field, filt in posted_data['matrixFilters'].items():
             if len(filt) > 0:
                 if filt['stage'] == 'before':
