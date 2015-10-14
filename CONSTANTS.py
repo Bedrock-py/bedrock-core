@@ -19,6 +19,8 @@ ANALYTICS_COL_NAME = 'analytics'
 RESULTS_COL_NAME = 'results'
 RESUTLS_PATH = '/var/www/bedrock/analytics/data/'
 
-MEMO_DB_NAME = "memo"
+USERMEMO_DB_NAME = "usermemo"
 MEMO_COL_NAME = "memo"
+USER_COL_NAME = "user"
+
 
