@@ -1,0 +1,356 @@
+Memo Put Tests:
+
+{
+  "element_id": "523",
+  "parent_id": "-1",
+  "text": "hello world",
+  "user_name": "tester"
+}
+#Success
+
+{
+  "element_id": "554",
+  "parent_id": "523",
+  "text": "hello world",
+  "user_name": "tester"
+}
+#Success
+
+{
+  "element_id": "524",
+  "parent_id": "523",
+  "text": "hello world",
+  "user_name": "1123"
+}
+#User Doesnt Exist
+
+{
+  "element_id": "535",
+  "parent_id": "523",
+  "text": "Hello world",
+  "user_name": "tester"
+}
+#Success
+
+{
+  "element_id": "523",
+  "parent_id": -1,
+  "text": "Hello World",
+  "user_name": "tester"
+}
+#Memo Already exists
+
+{
+  "element_id": "519",
+  "parent_id": -1,
+  "user_name": "tester"
+}
+#Success
+
+{
+  "element_id": "517",
+  "user_name": "tester"
+}
+#Parent ID set to -1
+
+{
+  "element_id": "517",
+}
+#500 error missing user_name
+
+{
+  "parent_id": "523",
+  "text": "hellow world",
+  "user_name": "100"
+}
+#500 error missing element id
+
+
+Get Tests:
+
+{
+  "element_id": "523",
+  "user_name": "tester"
+}
+#Success
+
+{
+  "element_id": "524",
+  "user_name": "tster"
+}
+#Memo Not FOund
+
+{
+  "element_id": "517",
+  "user_name": "tester"
+}
+#Success
+
+{
+  "element_id": "535",
+  "user_name": "tester"
+}
+#Success
+
+{
+  "element_id": "500",
+  "user_name": "tester"
+}
+#Memo Not Found
+
+Post Tests:
+{
+  "element_id": "523",
+  "text": "hello world1",
+  "user_name": "tester"
+}
+#Success
+
+{
+  "element_id": "554",
+  "text": "hello world2",
+  "user_name": "tester"
+}
+#Success
+
+{
+  "element_id": "553",
+  "text": "hello world2",
+  "user_name": "tester"
+}
+#Memo not found
+
+Delete Tests:
+{
+  "element_id": "520",
+  "user_name": "testererer"
+}
+#memo not found
+
+{
+  "element_id": "5210",
+  "user_name": "tester"
+}
+#memo not found
+
+{
+  "element_id": "523",
+  "user_name": "tester"
+}
+#deleteed
+
+
+User API Tests
+Put:
+
+{
+  "elements_owned": [],
+  "groups": [
+    "RE1"
+  ],
+  "password_hash": "hi",
+  "role": "RE1",
+  "email":"test@mail.com",
+  "user_id": "25952",
+  "user_name": "tester"
+}
+#Outcome: Success
+
+{
+  "elements_owned": [],
+  "groups": [
+    "RE1"
+  ],
+  "password_hash": "hi",
+  "role": "RE1",
+  "email":"test@mail.com",
+  "user_id": "25952",
+  "user_name": "tester2"
+}
+#Outcome: Success
+
+{
+  "elements_owned": [],
+  "groups": [
+    "RE1"
+  ],
+  "password_hash": "hi",
+  "email":"test@mail.com",
+  "role": "RE1",
+  "user_id": "25952",
+  "user_name": "tester2"
+}
+#Outcome: USer already exists
+
+{
+  "groups": [
+    "RE1"
+  ],
+  "password_hash": "hi",
+  "role": "RE1",
+  "user_id": "25952",
+  "user_name": "tester5"
+}
+#Outcome: Missing data
+
+{
+  "elements_owned": [],
+  "groups": [
+    "RE1"
+  ],
+  "role": "RE1",
+  "user_id": "25952",
+  "user_name": "tester5"
+}
+#Outcome: Missing Data
+
+{
+  "elements_owned": [],
+  "groups": [
+    "RE1"
+  ],
+  "password_hash": "hi",
+  "role": "RE1",
+  "user_id": "25952",
+}
+#Outcome: 500 error no name
+
+{
+  "elements_owned": [],
+  "groups": [
+    "RE1"
+  ],
+  "role": "RE1",
+  "user_id": "25952",
+  "user_name": "tester23"
+}
+#Outcome: Missing Data
+
+
+
+LOGIN:
+
+{
+  "password_hash": "hi",
+  "user_name": "tester"
+}
+#Outcome: password_hash Correct
+
+{
+  "password_hash": "hi2",
+  "user_name": "tester"
+}
+#Outcome password_hash inccorect
+
+{
+  "password_hash": "36963",
+  "user_name": "teste"
+}
+#Outcome user doesnt exist
+
+{
+  "password_hash": "hi",
+  "user_name": "teste"
+}
+#Outcome user doesnt exist
+
+Get:
+tester
+#get tester data
+tester2
+#get tester2 data
+tes
+#user not found
+
+Update_Info:
+{
+  "groups": [
+    "RE1","RE2"
+  ],
+  "password_hash": "hi",
+  "user_name": "tester"
+}
+#success
+
+{
+  "password_hash": "hi",
+  "user_name": "tester"
+}
+#Nothing avalible to update
+
+{
+  "elements_owned": ["54545"],
+  "role": "RE2",
+  "user_id": "36963",
+  "user_name": "tester2"
+}
+#Success
+
+{
+  "elements_owned": ["54545"],
+  "role": "RE2",
+  "user_id": "36963",
+  "user_name": "tester23"
+}
+#User Not Found
+
+UPDATE_password_hash:
+{
+  "password_hash": "hi1",
+  "old_password_hash":"hi",
+  "user_name": "tester"
+}
+#Success
+
+{
+  "password_hash": "hi2",
+  "old_password_hash":"hfd",
+  "user_name": "tester"
+}
+#Old password_hash Inccorect
+
+{
+  "old_password_hash":"hfd",
+  "user_name": "tester"
+}
+#password_hash missing
+
+{
+  "password_hash": "hi2",
+  "user_name": "tester"
+}
+# OLd password_hash missing
+
+{
+  "password_hash": "hi2",
+  "old_password_hash":"hfd"
+}
+#No username
+
+
+
+DELETE:
+
+{
+  "elements_owned": ["54545"],
+  "role": "RE2",
+  "user_id": "36963",
+  "user_name": "tester23"
+}
+#User Doesnt Exist
+{
+  "elements_owned": ["54545"],
+  "role": "RE2",
+  "user_id": "36963",
+  "user_name": "tester2"
+}
+#deleted
+
+{
+  "user_name": "tester"
+}
+#deleted
+
+{
+}
+#no name
