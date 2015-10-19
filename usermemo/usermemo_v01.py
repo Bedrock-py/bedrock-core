@@ -6,7 +6,7 @@ from datetime import datetime
 import utils
 from bson.objectid import ObjectId
 from CONSTANTS import *
-from passlib.hash import sha256_crypt
+from passlib.hash import pbkdf2_sha256
 
 app = Flask(__name__)
 app.debug = True
@@ -19,22 +19,23 @@ api = Api(app, version="0.1", title="User Memo API",
 ns_m = api.namespace('memo')
 ns_u = api.namespace('user')
 
+
 api.model('memo',{ 
                 'user_name': fields.String(description='user name', required=True),
-                'element_id': fields.String(description='element id',required=True),
+                'element_id': fields.String(description='the id of a source, matrix, or visulazation that the memo is attached to.',required=True),
                 'parent_id': fields.String(description='parent id',required=False),
                 'text': fields.String(description='text', required=False)
                 })
 
 api.model('user',{
-	            'user_name': fields.String(description='user name', required=True),#permanete
-	            'user_id' : fields.String(description='user id', required=False),#permanete                
+	            'user_name': fields.String(description='user name', required=True),#permanent
+	            'user_id' : fields.String(description='user id', required=False),#permanent                
                 'role' : fields.String(description='role', required=False),#can update
                 'groups': fields.List(fields.String,description='groups', required=False),#can update
                 'elements_owned': fields.List(fields.String,description='elements owned', required=False),#can update
-                'password' : fields.String(description='password', required=False),#can update
-                'old_password' : fields.String(description='old_password', required=False),#can update
-				#'account_creation': fields.DateTime(dt_format='iso8601',description='account creation', required=False),#permanete
+                'password_hash' : fields.String(description='password', required=False),#can update
+                'old_password_hash' : fields.String(description='old password', required=False),#can update
+				#'account_creation': fields.DateTime(dt_format='iso8601',description='account creation', required=False),#permanent
                 #'last_modified': fields.DateTime(dt_format='iso8601',description='last modified', required=False),#automatic update on post
                 #'last_login': fields.DateTime(dt_format='iso8601',description='last_login', required=False),#automatic update on post
       			#'last_pw_modification' : fields.DateTime(dt_format='iso8601',description='last modified', required=False),#automatic update on post
@@ -49,9 +50,9 @@ class User(Resource):
 	class User_Get(Resource): 
 		def get(self, user_name):	
 			col = client[USERMEMO_DB_NAME][USER_COL_NAME]
-			user = col.find_one({"user_name":user_name}, {'_id':0})
+			user = col.find_one({"user_name":user_name}, {'_id':0.'password_hash':0})
 			if user == None:
-				return "User Not Found",404
+				return "Bad Request",400
 			else:
 				return json.dumps(user, default=json_util.default),200		
 
@@ -64,21 +65,25 @@ class User(Resource):
 			data = json.loads(request.data)
 			user = col.find_one({"user_name":data['user_name']}, {'_id':0})
 			if user != None:
-				return "User Already Exists",409
+				return "Bad Request",400
 			for key in data.keys():
-				if len(data.keys()) != 6 or key not in ["user_id","user_name","role","groups","elements_owned","password"]:
-					return "Missing Data",400
+				if len(data.keys()) != 6 or key not in ["user_id","user_name","role","groups","elements_owned","password_hash"]:
+					return "Bad Request",400
 
 			data['account_creation'] = datetime.utcnow()
 			data['last_modified'] = datetime.utcnow()
 			data['last_login'] = datetime.utcnow()
 			data['last_pw_modification'] = datetime.utcnow()
 
-			password = sha256_crypt.encrypt(data['password'])
-			data['password'] = password
+			password = pbkdf2_sha256.encrypt(data['password_hash'])
+			data['password_hash'] = password
+			col.create_index(data["user_name"],unique =True)
 
-			col.insert_one(data)
-			return "Success",201
+			result = col.insert_one(data)
+			if result.modified_count:
+					return "Success",201
+			return "Bad Request",400
+
 
 
 	@ns_u.route('/login/')
@@ -88,19 +93,19 @@ class User(Resource):
 			col = client[USERMEMO_DB_NAME][USER_COL_NAME]
 			data = json.loads(request.data)
 			
-			if not data.has_key('password'):
-				return "Password Not Present",400
+			if not data.has_key('password_hash'):
+				return "Invalid Login", 401
 
 			user = col.find_one({"user_name":data['user_name']}, {'_id':0})
 
 			if user == None:
-				return "User Does Not Exist",404
+				return "Invalid Login", 401
 
-			if sha256_crypt.verify(data['password'], user['password']):
-				col.update_one({"user_name":data['user_name']},{'$set':{"last_login":datetime.utcnow()}})
-				return "Password Correct",200
-			else:
-				return "Password Inccorect",401
+			if pbkdf2_sha256.verify(data['password_hash'], user['password_hash']):
+				result = col.update_one({"user_name":data['user_name']},{'$set':{"last_login":datetime.utcnow()}})
+				if result.modified_count:
+					return "Valid Login",200
+			return "Invalid Login", 401
 
 
 	@ns_u.route('/update_info/')
@@ -112,16 +117,17 @@ class User(Resource):
 			
 			user = col.find_one({"user_name":data['user_name']}, {'_id':0})
 			if user == None:
-				return "User Does Not Exist",404
+				return "Bad Request",400
 			changed = False
 			for key in data.keys():
 				if key in ["role","groups","elements_owned"]:
-					col.update_one({"user_name":data['user_name']},{'$set':{key:data[key],"last_modified":datetime.utcnow()}})
-					changed = True
+					result = col.update_one({"user_name":data['user_name']},{'$set':{key:data[key],"last_modified":datetime.utcnow()}})
+					if result.modified_count:
+						changed = True
 			if changed:
 				return "Success",200
-			else:
-				return "Nothing Avalible To Update",404
+			
+			return "Bad Request",400
 
 
 	@ns_u.route('/update_password/')
@@ -133,17 +139,18 @@ class User(Resource):
 			
 			user = col.find_one({"user_name":data['user_name']}, {'_id':0})
 			if user == None:
-				return "User Does Not Exist",404
+				return "Bad Request",400
 
-			if not data.has_key('password') or not data.has_key('old_password'):
-				return "Password Or Old Password Not Present",400
+			if not data.has_key('password_hash') or not data.has_key('old_password_hash'):
+				return "Bad Request",400
 
-			if sha256_crypt.verify(data['old_password'], user['password']):
-				password = sha256_crypt.encrypt(data['password'])
-				col.update_one({"user_name":data['user_name']},{'$set':{"password":password,"last_modified":datetime.utcnow(),'last_pw_modification':datetime.utcnow()}})
-				return "Success",200
-			else:
-				return "Old Password Inccorect",401
+			if pbkdf2_sha256.verify(data['old_password_hash'], user['password_hash']):
+				password_hash = pbkdf2_sha256.encrypt(data['password_hash'])
+				result = col.update_one({"user_name":data['user_name']},{'$set':{"password_hash":password_hash,"last_modified":datetime.utcnow(),'last_pw_modification':datetime.utcnow()}})
+				if result.modified_count:
+					return "Success",200
+				
+			return "Bad Request",400
 			
 
 	@ns_u.route('/delete_user/')
@@ -155,10 +162,15 @@ class User(Resource):
 			
 			user = col.find_one({"user_name":data['user_name']}, {'_id':0})
 			if user == None:
-				return "User Does Not Exist",404
+				return "Bad Request",400
 			col.delete_one({"user_name":data['user_name']})
 			return "Deleted",200
 	
+	@ns_u.route('/logout_user/')
+	class User_logout(Resource): 
+		@api.doc(body='user')
+		def post(self):
+			pass
 	
 @ns_m.route('/')
 class Memo(Resource):
@@ -176,18 +188,20 @@ class Memo(Resource):
 			if not data.has_key('parent_id') or data['parent_id'] == "-1":
 				data['parent_id'] = "-1"
 			elif col.find_one({"element_id":data['parent_id']}, {'_id':0}) == None:
-				return "Parent ID Doesn't Exist",404
+				return "Bad Request",400
 
 			memo = col.find_one({"user_name":data['user_name'],"element_id":data['element_id']}, {'_id':0})
 			if memo != None:
-				return "Memo already exists",409
+				return "Bad Request",400
 
 			user = col2.find_one({"user_name":data['user_name']}, {'_id':0})
 			if user == None:
-				return "User Doesn't exists",404
+				return "Bad Request",400
 
 			user["elements_owned"].append(data['element_id'])
-			col2.update_one({"user_name":data['user_name']},{'$set':{"last_login":datetime.utcnow(),"elements_owned":user["elements_owned"]}})
+			result = col2.update_one({"user_name":data['user_name']},{'$set':{"last_login":datetime.utcnow(),"elements_owned":user["elements_owned"]}})
+			if not result:
+				return "Bad Request",400
 
 			col.insert_one(data)
 
@@ -200,7 +214,7 @@ class Memo(Resource):
 			col = client[USERMEMO_DB_NAME][MEMO_COL_NAME]
 			memo = col.find_one({"user_name":user_name,"element_id":element_id}, {'_id':0})
 			if memo == None:
-				return "Memo Not Found",404
+				return "Bad Request",400
 			memo['text'] = [memo['text']]
 			curr = col.find_one({"user_name":user_name,"element_id":memo['parent_id']})
 
@@ -217,13 +231,16 @@ class Memo(Resource):
 			col = client[USERMEMO_DB_NAME][MEMO_COL_NAME]
 			data = json.loads(request.data)
 			if not data.has_key('text'):
-				return "Text Not Found",400
+				return "Bad Request",400
 
 			memo = col.find_one({"user_name":data['user_name'],"element_id":data['element_id']}, {'_id':0})
 			if memo == None:
-				return "Memo Not Found",404
-			col.update_one({"user_name":data['user_name'],"element_id":data['element_id']},{'$set':{"text":data['text']}})
-			return "Success",200
+				return "Bad Request",400
+			result = col.update_one({"user_name":data['user_name'],"element_id":data['element_id']},{'$set':{"text":data['text']}})
+			if result:
+				return "Success",200
+			return "Bad Request",400
+
 
 
 	############################################################### 
@@ -243,12 +260,15 @@ class Memo(Resource):
 
 			memo = col.find_one({"user_name":data['user_name'],"element_id":data['element_id']}, {'_id':0})
 			if memo == None:
-				return "Memo Not Found",404
-			col.delete_one({"user_name":data['user_name'],"element_id":data['element_id']})
+				return "Bad Request",400
+			result = col.delete_one({"user_name":data['user_name'],"element_id":data['element_id']})
+			if not result:
+				return "Bad Request",400
+
 			user = col2.find_one({"user_name":data['user_name']}, {'_id':0})
 			if user == None:
-				return "User Doesn't exists",404
+				return "Bad Request",400
 			user["elements_owned"].remove(data['element_id'])
-			col2.update_one({"user_name":data['user_name']},{'$set':{"last_login":datetime.utcnow(),"elements_owned":user["elements_owned"]}})
-
-			return "Deleted",200
+			result = col2.update_one({"user_name":data['user_name']},{'$set':{"last_login":datetime.utcnow(),"elements_owned":user["elements_owned"]}})
+			if result:
+				return "Deleted",200
