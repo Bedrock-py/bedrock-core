@@ -30,7 +30,7 @@ class Memo(Resource):
 
 
 	@ns_m.route('/create_memo/')
-	class Memo_create(Resource):
+	class Memo_Create(Resource):
 		@api.doc(body='memo')
 		def put(self):
 			col = client[USERMEMO_DB_NAME][MEMO_COL_NAME]
@@ -78,7 +78,7 @@ class Memo(Resource):
 
 
 	@ns_m.route('/update_memo/')
-	class Memo_update(Resource):
+	class Memo_Update(Resource):
 		@api.doc(body='memo')
 		def post(self):
 			col = client[USERMEMO_DB_NAME][MEMO_COL_NAME]
@@ -104,7 +104,7 @@ class Memo(Resource):
 	#Failing to do so will cause memos to not be returned properly. 
 	################################################################
 	@ns_m.route('/delete_memo/')
-	class Memo_delete(Resource):
+	class Memo_Delete(Resource):
 		@api.doc(body='memo')
 		def delete(Self):
 			col = client[USERMEMO_DB_NAME][MEMO_COL_NAME]

@@ -53,7 +53,7 @@ class User(Resource):
 
 
 	@ns_u.route('/create_user/')
-	class User_create(Resource): 
+	class User_Create(Resource): 
 		@api.doc(body='user')
 		def put(self):
 			col = client[USERMEMO_DB_NAME][USER_COL_NAME]
@@ -81,7 +81,7 @@ class User(Resource):
 
 
 	@ns_u.route('/login/')
-	class User_login(Resource): 
+	class User_Login(Resource): 
 		@api.doc(body='user')#/login
 		def post(self):
 			col = client[USERMEMO_DB_NAME][USER_COL_NAME]
@@ -103,7 +103,7 @@ class User(Resource):
 
 
 	@ns_u.route('/update_info/')
-	class User_update_info(Resource): 
+	class User_Update_Info(Resource): 
 		@api.doc(body='user')
 		def post(self):
 			col = client[USERMEMO_DB_NAME][USER_COL_NAME]
@@ -125,7 +125,7 @@ class User(Resource):
 
 
 	@ns_u.route('/update_password/')
-	class User_update_password(Resource): 
+	class User_Update_Password(Resource): 
 		@api.doc(body='user')
 		def post(self):
 			col = client[USERMEMO_DB_NAME][USER_COL_NAME]
@@ -148,7 +148,7 @@ class User(Resource):
 			
 
 	@ns_u.route('/delete_user/')
-	class User_delete(Resource): 
+	class User_Delete(Resource): 
 		@api.doc(body='user')
 		def delete(self):
 			col = client[USERMEMO_DB_NAME][USER_COL_NAME]
@@ -162,7 +162,7 @@ class User(Resource):
 	
 
 	@ns_u.route('/logout/')
-	class User_logout(Resource): 
+	class User_Logout(Resource): 
 		@api.doc(body='user')
 		def post(self):
 			pass
