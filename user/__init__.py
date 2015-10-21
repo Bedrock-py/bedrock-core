@@ -1,5 +1,6 @@
+
 #****************************************************************
-#  File: app.wsgi
+#  File: 
 #
 # Copyright (c) 2015, Georgia Tech Research Institute
 # All rights reserved.
@@ -11,11 +12,3 @@
 # in whole or in part, is forbidden except by the express written
 # permission of the Georgia Tech Research Institute.
 #****************************************************************/
-
-import logging, sys
-logging.basicConfig(stream=sys.stderr)
-sys.path.insert(0, '/var/www/bedrock/')
-from flask.ext.cors import CORS 
-from memo.memo_v01 import app as application
-
-CORS(application, headers='Content-Type')

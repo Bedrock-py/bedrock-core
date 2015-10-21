@@ -16,6 +16,6 @@ import logging, sys
 logging.basicConfig(stream=sys.stderr)
 sys.path.insert(0, '/var/www/bedrock/')
 from flask.ext.cors import CORS 
-from memo.memo_v01 import app as application
+from user.user_v01 import app as application
 
 CORS(application, headers='Content-Type')
