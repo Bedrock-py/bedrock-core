@@ -192,7 +192,7 @@ if [ $1 = "install" ]; then
         do
             o="${o%\"}"
             o="${o#\"}"
-            o="$(echo -e "${o}" | tr -d '[[:space:]]')"
+            o="$(echo  "${o}" | tr -d '[[:space:]]')"
             ./opal.sh install $o
         done
 

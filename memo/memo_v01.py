@@ -45,16 +45,16 @@ class Memo(Resource):
 
 			memo = col.find_one({"user_name":data['user_name'],"element_id":data['element_id']}, {'_id':0})
 			if memo != None:
-				return "Bad Request",400
+				return "Bad Request",401
 
 			user = col2.find_one({"user_name":data['user_name']}, {'_id':0})
 			if user == None:
-				return "Bad Request",400
+				return "Bad Request",402
 
 			user["elements_owned"].append(data['element_id'])
 			result = col2.update_one({"user_name":data['user_name']},{'$set':{"last_login":datetime.utcnow(),"elements_owned":user["elements_owned"]}})
 			if not result:
-				return "Bad Request",400
+				return "Bad Request",403
 
 			col.insert_one(data)
 

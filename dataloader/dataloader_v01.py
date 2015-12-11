@@ -321,7 +321,7 @@ class Sources(Resource):
                 response['created'] = t
                 response['matrices_count'] = len(source['matrices'])
             except:
-                tb = traceback.format_exc()
+                tb = traceback.format_exc() 
                 return tb, 406
 
             return response, 201
