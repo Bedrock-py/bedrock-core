@@ -1,3 +1,5 @@
+#!/bin/bash
+
 if ! [ $(id -u) = 0 ]; then 
     echo "Please start the script as root or sudo!" 
     exit 1 
