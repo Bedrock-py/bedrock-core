@@ -355,6 +355,109 @@ class Analytics(Resource):
 
             return analytics
 
+    @ns_a.route('/models/')
+    class Models(Resource):
+        @api.doc(model='Analytic')
+        def get(self):
+            '''
+            Returns a list of available trained models.
+            All analytics registered in the system with a type of 'Model' will be returned. If you believe there is an analytic that exists in the system but is not present here, it is probably not registered in the MongoDB database.
+            '''
+            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+            cur = col.find()
+            analytics = []
+            for src in cur:
+                if src['type'] == 'Model':
+                    response = {key: value for key, value in src.items() if key != '_id'}
+                    analytics.append(response)
+
+            return analytics
+
+    @ns_a.route('/models/published/')
+    class Published(Resource):
+        @api.doc(model='Analytic')
+        def get(self):
+            '''
+            Returns a list of published models.
+            '''
+            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+            cur = col.find()
+            analytics = []
+            for src in cur:
+                if src['type'] == 'Model' and 'published' in src and src['published']:
+                    response = {key: value for key, value in src.items() if key != '_id'}
+                    analytics.append(response)
+
+            return analytics
+
+
+    @ns_a.route('/models/publish/<model_id>/<flag>/')
+    class Publish(Resource):
+        @api.doc(params={}, responses={201: 'Success', 406: 'Error', 404: 'No resource at that URL'})
+        def post(self, model_id, flag):
+            '''
+            Publish/unpublish a model.
+            This request is only applicable to analytics that are of type 'Model'.
+            '''
+            # get the analytic
+            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+            try:
+                analytic = col.find({'analytic_id':model_id})[0]
+            except IndexError:
+                return 'No resource at that URL.', 404
+
+            # unpublish the model
+            if flag == '0':
+                result = col.update_one({"analytic_id":analytic['analytic_id'],"_id":analytic['_id']},{'$set':{"published":False}})
+                if result:
+                    return "Succesfully unpublished model " + model_id, 200
+
+            # publish the model
+            else:
+                result = col.update_one({"analytic_id":analytic['analytic_id'],"_id":analytic['_id']},{'$set':{"published":True}})
+                if result:
+                    # still need to add appropriate host/IP
+                    return "Analytic available from /analytics/models/"+analytic['analytic_id'] + '/', 200
+
+            return "Bad Request",400
+
+    @ns_a.route('/models/<model_id>/')
+    class Classify(Resource):
+        @api.doc(params={'payload': 'Must be list of data to have classified.'}, 
+            responses={201: 'Success', 406: 'Error', 404: 'No resource at that URL'})
+        def post(self, model_id):
+            '''
+            Apply a published model to the provided input data and return the results.
+            This request is only applicable to analytics that are of type 'Model' and have been published.
+            '''
+            # get the analytic
+            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
+            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+            try:
+                analytic = col.find({'analytic_id':model_id})[0]
+            except IndexError:
+                return 'No resource at that URL.', 404
+            
+            # make sure it is of type 'Model'
+            if analytic['type'] != 'Model':
+                return "This analytic is not of type 'Model'", 406
+
+            if 'published' not in analytic or not analytic['published']:
+                return "No resource at that URL", 404
+
+            #get the input data
+            print "hi25"
+            data = request.get_json()
+            print data
+            parameters = data['parameters']
+            inputs = data['inputs']
+            result = utils.classify(model_id, parameters, inputs)
+            return result, 200
+
+
     # @app.route('/analytics/<analytic_id>/', methods=['DELETE'])
     @ns_a.route('/<analytic_id>/')
     @api.doc(params={'analytic_id': 'The ID assigned to a particular analtyic'})

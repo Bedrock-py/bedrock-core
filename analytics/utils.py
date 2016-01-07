@@ -188,10 +188,10 @@ def run_analysis(queue, analytic_id, parameters, inputs, storepath, name):
         queue.put(None)
 
 def classify(analytic_id, parameters, inputs):
-    exec("import algorithms." + analytic_id)
-    filename = "algorithms." + analytic_id
+    exec("import opals." + analytic_id)
+    filename = "opals." + analytic_id
     classname = filename.split(".")[-1]
-    objectname = "algorithms." + analytic_id + '.' + classname
+    objectname = "opals." + analytic_id + '.' + classname
     alg = eval(objectname)()
     initialize(alg, parameters)
     if alg.check_parameters():
