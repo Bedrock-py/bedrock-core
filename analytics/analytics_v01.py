@@ -143,7 +143,11 @@ class Analytics(Resource):
         analytics = []
         for src in cur:
             response = {key: value for key, value in src.items() if key != '_id'}
-            analytics.append(response)
+            if response['type'] == 'Model':
+                if 'published' in response and response['published']:
+                    analytics.append(response)
+            else:
+                analytics.append(response)
 
         return analytics
 
