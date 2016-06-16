@@ -1,0 +1,216 @@
+{ 
+	"opal-analytics-clustering": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-analytics-clustering.git",
+			"tag": "v1.0.0"
+		},
+        "opal-gatetools": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-gatetools",
+			"tag": "v1.0.0"
+		},
+	"opal-analytics-dimensionreduction": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-analytics-dimensionreduction.git",
+			"tag": "v1.0.0"
+		},
+	"opal-analytics-classification": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-analytics-classification.git",
+			"tag": "v1.0.0"
+		},
+	"opal-analytics-pca-regression": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-analytics-pca-regression.git",
+			"tag": "v1.0.0"
+		},
+	"opal-analytics-qualitymeasures": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-analytics-qualitymeasures.git",
+			"tag": "v1.0.0"
+		},
+	"opal-analytics-rtc":
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-analytics-rtc.git",
+			"tag": "v1.0.0"
+		},
+	"opal-dataloader-ingest-spreadsheet": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-dataloader-ingest-spreadsheet.git",
+			"tag": "v1.0.1"
+		},
+	"opal-dataloader-ingest-mongodb": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-dataloader-ingest-mongodb.git",
+			"tag": "v1.0.0"
+		},
+	"opal-dataloader-ingest-text": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-dataloader-ingest-text.git",
+			"tag": "v1.0.0"
+		},
+	"opal-dataloader-ingest-twitter":
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-dataloader-ingest-twitter.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-histogram": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-histogram.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-barchart": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-barchart.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-heatmap": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-heatmap.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-json": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-json.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-linechart": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-linechart.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-linechart-peakuse": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-linechart-peakuse.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-map": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-map.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-piechart": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-piechart.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-popular": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-popular.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-scatterplot": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-scatterplot.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-sentiment-topics": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-sentiment-topics.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-top-links": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-top-links.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-top-n": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-top-n.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-top-news": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-top-news.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-topics-trends": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-topics-trends.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-topterms": 
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-topterms.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-twitter-followers":
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-twitter-followers.git",
+			"tag": "v1.0.0"
+		},
+	"opal-visualization-wordclouds":
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-visualization-wordclouds.git",
+			"tag": "v1.0.0"
+		},
+	"opal-dataloader-filter-lean":
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-dataloader-filter-lean.git",
+			"tag": "v1.0.0"
+		},
+	"opal-analytics-smallk":
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-analytics-smallk.git",
+			"tag": "v1.0.2"
+		},
+	"opal-dataloader-filter-truth":
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-dataloader-filter-truth.git",
+			"tag": "v1.0.0"
+		},
+	"dashboard-diamondeye":
+		{
+			"host": "github.gatech.edu",
+			"repo": "DiamondEye/diamondeye.git",
+			"tag": "v1.0.0"
+		},
+	"opal-dataloader-ingest-omop":
+		{
+			"host": "github.gatech.edu",
+			"repo": "Bedrock/opal-dataloader-ingest-omop.git",
+			"tag": "v1.0.0"
+		}
+
+}
+
+
+
+
+
+
+
+
+

@@ -523,21 +523,37 @@ class Analytics(Resource):
 
             #get the input data
             data = request.get_json(force=True)
-            src_id = data['src'][0]['src_id']
-            sub_id = data['src'][0]['id']
+            datasrc = data['src'][0]
+            if isinstance(datasrc, list):
+                msg = "When Posting Analytic %s, datasrc was a list"%(analytic_id)
+                print(msg)
+                return msg, 400 #Bad Request
+            else:
+                print("Datasource is a <%s>"%type(datasrc))
+
+            src_id = datasrc['src_id']
+            sub_id = datasrc['id']
             parameters = data['parameters']
             inputs = data['inputs']
             name = data['name']
             res_id = utils.getNewId()
             #see if the input data is a result
-            if 'analytic_id' in data['src'][0]:
+            if 'analytic_id' in datasrc:
                 isResultSource = True
-                mat_id = data['src'][0]['src_id']
+                mat_id = datasrc['src_id']
             else:
                 mat_id = sub_id
             storepath = RESUTLS_PATH + mat_id + '/' + res_id + '/'
             os.makedirs(storepath)
 
+            # print("Extracted info for analytic:%s\n %s"%(analytic_id, {
+            #     'src_id': src_id,
+            #     'sub_id': sub_id,
+            #     'parameters': parameters,
+            #     'inputs': inputs,
+            #     'name': name,
+            #     'res_id': res_id
+            # }))
             #run analysis
             queue = Queue()
             try:

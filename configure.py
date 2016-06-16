@@ -54,7 +54,7 @@ if __name__=='__main__':
                 print '    removed:', args.filename
                 exit(0)
             else:
-                print 'WARNING: No registered ingest module with that name.'
+                print 'WARNING: No registered ingest module %s.'%args.filename
                 exit(0)
 
         elif args.mode == 'add':
@@ -68,15 +68,15 @@ if __name__=='__main__':
                 print '    added: ', args.filename
                 exit(0)
             else:
-                print 'WARNING: Ingest module with that name is already registered.'
+                print 'WARNING: Ingest module %sis already registered.'%args.filename
                 exit(0)
-        
+
         if args.mode == 'reload':
             val = col.remove({'ingest_id':args.filename})
             if val['n'] != 0:
                 print '    removed:', args.filename
             else:
-                print 'WARNING: No registered ingest module with that name.'
+                print 'WARNING: No registered ingest module %s.'%args.filename
                 exit(0)
             try:
                 col.find({'ingest_id':args.filename})[0]
@@ -88,7 +88,7 @@ if __name__=='__main__':
                 print '    added: ', args.filename
                 exit(0)
             else:
-                print 'WARNING: Ingest module with that name is already registered.'
+                print 'WARNING: Ingest module %s is already registered.'%args.filename
                 exit(0)
 
 
@@ -100,7 +100,7 @@ if __name__=='__main__':
                 print '    removed:', args.filename
                 exit(0)
             else:
-                print 'WARNING: No registered filter with that name.'
+                print 'WARNING: No registered filter %s .'%args.filename
                 exit(0)
 
         elif args.mode == 'add':
@@ -114,7 +114,7 @@ if __name__=='__main__':
                 print '    added: ', args.filename
                 exit(0)
             else:
-                print 'WARNING: Filter with that name is already registered.'
+                print 'WARNING: Filter %s is already registered.'%args.filename
                 exit(0)
 
         elif args.mode == 'reload':
@@ -122,7 +122,7 @@ if __name__=='__main__':
             if val['n'] != 0:
                 print '    removed:', args.filename
             else:
-                print 'WARNING: No registered filter with that name.'
+                print 'WARNING: No registered filter %s .'%args.filename
                 exit(0)
             try:
                 col.find({'filter_id':args.filename})[0]
@@ -134,7 +134,7 @@ if __name__=='__main__':
                 print '    added: ', args.filename
                 exit(0)
             else:
-                print 'WARNING: Filter with that name is already registered.'
+                print 'WARNING: Filter %s is already registered.'%args.filename
                 exit(0)
 
 
@@ -147,7 +147,7 @@ if __name__=='__main__':
                 print '    removed:', args.filename
                 exit(0)
             else:
-                print 'WARNING: No registered analytic with that name.'
+                print 'WARNING: No registered analytic %s .'%args.filename
                 exit(0)
 
         elif args.mode == 'add':
@@ -162,7 +162,7 @@ if __name__=='__main__':
                 print '    added: ', args.filename
                 exit(0)
             else:
-                print 'WARNING: Analytic with that name is already registered.'
+                print 'WARNING: Analytic %s is already registered.'%args.filename
                 exit(0)
 
         elif args.mode == 'reload':
@@ -170,7 +170,7 @@ if __name__=='__main__':
             if val['n'] != 0:
                 print '    removed:', args.filename
             else:
-                print 'WARNING: No registered analytic with that name.'
+                print 'WARNING: No registered analytic %s .'%args.filename
                 exit(0)
             try:
                 col.find({'analytic_id':args.filename})[0]
@@ -183,7 +183,7 @@ if __name__=='__main__':
                 print '    added: ', args.filename
                 exit(0)
             else:
-                print 'WARNING: Analytic with that name is already registered.'
+                print 'WARNING: Analytic %s is already registered.'%args.filename
                 exit(0)
 
     elif args.api == 'workflows':
@@ -194,7 +194,7 @@ if __name__=='__main__':
                 print '    removed:', args.filename
                 exit(0)
             else:
-                print 'WARNING: No registered workflow with that name.'
+                print 'WARNING: No registered workflow %s .'%args.filename
                 exit(0)
 
         elif args.mode == 'add':
@@ -209,7 +209,7 @@ if __name__=='__main__':
                 print '    added: ', args.filename
                 exit(0)
             else:
-                print 'WARNING: Workflow with that name is already registered.'
+                print 'WARNING: Workflow %s is already registered.'%args.filename
                 exit(0)
 
         elif args.mode == 'reload':
@@ -217,7 +217,7 @@ if __name__=='__main__':
             if val['n'] != 0:
                 print '    removed:', args.filename
             else:
-                print 'WARNING: No registered workflow with that name.'
+                print 'WARNING: No registered workflow %s .'%args.filename
                 exit(0)
             try:
                 col.find({'work_id':args.filename})[0]
@@ -230,7 +230,7 @@ if __name__=='__main__':
                 print '    added: ', args.filename
                 exit(0)
             else:
-                print 'WARNING: Workflow with that name is already registered.'
+                print 'WARNING: Workflow %s is already registered.'%args.filename
                 exit(0)
 
 
@@ -242,7 +242,7 @@ if __name__=='__main__':
                 print '    removed:', args.filename
                 exit(0)
             else:
-                print 'WARNING: No registered visualization with that name.'
+                print 'WARNING: No registered visualization %s .'%args.filename
                 exit(0)
 
         elif args.mode == 'add':
@@ -257,15 +257,15 @@ if __name__=='__main__':
                 print '    added: ', args.filename
                 exit(0)
             else:
-                print 'WARNING: Visualization with that name is already registered.'
+                print 'WARNING: Visualization %s is already registered.'%args.filename
                 exit(0)
-        
+
         elif args.mode == 'reload':
             val = col.remove({'vis_id':args.filename})
             if val['n'] != 0:
                 print '    removed:', args.filename
             else:
-                print 'WARNING: No registered visualization with that name.'
+                print 'WARNING: No registered visualization %s .'%args.filename
                 exit(0)
             try:
                 col.find({'vis_id':args.filename})[0]
@@ -278,8 +278,8 @@ if __name__=='__main__':
                 print '    added: ', args.filename
                 exit(0)
             else:
-                print 'WARNING: Visualization with that name is already registered.'
+                print 'WARNING: Visualization %s is already registered.'%args.filename
                 exit(0)
 
     else:
-        print 'ERROR: No api by that name.'
+        print 'ERROR: No api named %s.'%args.filename
