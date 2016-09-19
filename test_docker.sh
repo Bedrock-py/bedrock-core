@@ -13,7 +13,11 @@
 
 # BEGIN SETUP PHASE that should run in the dockerfile but doesn't
 docker build -t bedrock .
-ID=$(docker run -p 81:81 -p 82:82 -d bedrock)
+# assuming the source code was added in the docker file
+ID=$(docker run -p 81:81 -p 82:82 -d  bedrock)
+# for debugging you can mount the source code in the docker container and changes will be reflected live.
+# you need to remove the ADD ./ /var/www/bedrock line from the Dockerfile in order to make this work.
+# ID=$(docker run -p 81:81 -p 82:82 -d -v $(pwd):/var/www/bedrock bedrock)
 echo "docker container ID:$ID is running"
 # TODO find a better way to wait for mongo to start.
 sleep 5

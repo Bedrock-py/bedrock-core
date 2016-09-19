@@ -520,7 +520,7 @@ if [ -z "$BEDROCK_DIR" ]; then
 fi
 
 if [ -z "$OPALDIR" ]; then
-    OPALDIR=$BEDROCK_DIR/opals-sources/
+    OPALDIR=$BEDROCK_DIR/../opals-sources/
 fi
 
 linfo "BEDROCK_DIR: $BEDROCK_DIR"

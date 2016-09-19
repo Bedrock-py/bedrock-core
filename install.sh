@@ -43,8 +43,8 @@ sudo a2ensite bedrock.conf
 
 echo "INFO: making links for bedrock"
 sudo ln -s /var/www/bedrock/opal.sh /usr/local/bin/opal
-sudo mkdir /var/www/bedrock/analytics/data
+sudo mkdir -p /var/www/bedrock/analytics/data
 sudo chown www-data /var/www/bedrock/analytics/data
-sudo mkdir /var/www/bedrock/dataloader/data
+sudo mkdir -p /var/www/bedrock/dataloader/data
 sudo chown www-data /var/www/bedrock/dataloader/data
 sudo chown www-data /var/www/bedrock/analytics/opals

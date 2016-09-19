@@ -34,4 +34,4 @@ if __name__ == "__main__":
     # we just stop the apache2 server with apache2ctrl because we started it
     # in the Dockerfile with apache2ctrl start -D FOREGROUND
     # TODO if you set up process management correctly, change this line.
-    subprocess.check_call('sudo apache2ctrl stop', shell=True)
+    # subprocess.check_call('sudo apache2ctl stop', shell=True)

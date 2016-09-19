@@ -37,12 +37,12 @@ RUN apt-get install -qq -y \
                 vim
 
 # Binaries built with checkmake of bedrock libraries.
-ADD http://130.207.211.77/packages/libelemental_0.84-p1-1_amd64.deb libelemental_0.84-p1-1_amd64.deb
-ADD http://130.207.211.77/packages/libflame_5.0-4648_amd64.deb      libflame_5.0-4648_amd64.deb
-ADD http://130.207.211.77/packages/libopenblas_0.2.9-1_amd64.deb    libopenblas_0.2.9-1_amd64.deb
-ADD http://130.207.211.77/packages/libsmallk_20150909-1_amd64.deb   libsmallk_20150909-1_amd64.deb
-ADD http://130.207.211.77/packages/openmpi_1.8.1-1_amd64.deb        openmpi_1.8.1-1_amd64.deb
-ADD http://130.207.211.77/packages/pysmallk_20150909-1_amd64.deb    pysmallk_20150909-1_amd64.deb
+RUN wget --quiet http://130.207.211.77/packages/libelemental_0.84-p1-1_amd64.deb &&   \
+    wget --quiet http://130.207.211.77/packages/libflame_5.0-4648_amd64.deb    && \
+    wget --quiet http://130.207.211.77/packages/libopenblas_0.2.9-1_amd64.deb  && \
+    wget --quiet http://130.207.211.77/packages/libsmallk_20150909-1_amd64.deb && \
+    wget --quiet http://130.207.211.77/packages/openmpi_1.8.1-1_amd64.deb      && \
+    wget --quiet http://130.207.211.77/packages/pysmallk_20150909-1_amd64.deb
 
 RUN dpkg -i ./libelemental_0.84-p1-1_amd64.deb \
             ./libflame_5.0-4648_amd64.deb      \
@@ -57,11 +57,9 @@ COPY ./requirements.txt /var/www/bedrock-requirements.txt
 
 RUN pip install -U pip && hash -r && pip install -r /var/www/bedrock-requirements.txt
 
-ADD http://10.50.76.157/packages/opals.tar.gz /var/www
+RUN cd /var/www && curl --silent http://10.50.76.157/packages/opals.tar.gz | tar xz
 # ADD http://127.0.0.1:8000/opals.tar.gz /root/bedrock/opals-sources
 
-ADD ./ /var/www/bedrock
-RUN cd /var/www/bedrock/ && /var/www/bedrock/install.sh
 # RUN mv /opals-sources /root/bedrock/opals-sources
 
 # TODO We should run the opal_setup.sh script or ./setup.py
@@ -86,6 +84,10 @@ EXPOSE 28017
 # it is definitely a hack that should be removed (added 6/10/2016)
 # we should either decompose this service or use http://phusion.github.io/baseimage-docker/#solution
 # as the base image, in order run multiple processes in a single container.
-CMD  service mongodb start && /usr/sbin/apache2ctl -D FOREGROUND; /usr/sbin/apache2ctl -D FOREGROUND
+RUN mkdir -p /data/db
+ADD ./ /var/www/bedrock
+RUN cd /var/www/bedrock/ && /var/www/bedrock/install.sh
+
+CMD  service mongodb start  &&  /usr/sbin/apache2ctl -D FOREGROUND; /usr/sbin/apache2ctl -D FOREGROUND
 
 # to test this you can run ./test_docker.sh which will build, run, and test the container.
