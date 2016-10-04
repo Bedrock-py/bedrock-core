@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from string import punctuation
 import argparse
 import fnmatch
@@ -6,6 +7,7 @@ import shutil
 import sys
 import json
 sys.path.insert(1, '/var/www/bedrock/')
+sys.path.insert(0, '/var/www/bedrock/src/')
 
 import analytics.utils
 import dataloader.utils

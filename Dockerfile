@@ -65,7 +65,7 @@ RUN cd /var/www && curl --silent http://10.50.76.157/packages/opals.tar.gz | tar
 # TODO We should run the opal_setup.sh script or ./setup.py
 # in the Dockerfile, but it needs a running mongo instance to work.
 # thus we run this with docker exec sh -c "cd /var/www/bedrock && ./setup.py"
-# RUN cd /var/www/bedrock && ./setup.py
+# RUN cd /var/www/bedrock && ./bin/setup.py
 
 # standard apache
 EXPOSE 80
@@ -86,7 +86,7 @@ EXPOSE 28017
 # as the base image, in order run multiple processes in a single container.
 RUN mkdir -p /data/db
 ADD ./ /var/www/bedrock
-RUN cd /var/www/bedrock/ && /var/www/bedrock/install.sh
+RUN cd /var/www/bedrock/ && /var/www/bedrock/bin/install.sh
 
 CMD  service mongodb start  &&  /usr/sbin/apache2ctl -D FOREGROUND; /usr/sbin/apache2ctl -D FOREGROUND
 
