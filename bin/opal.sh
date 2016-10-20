@@ -114,7 +114,7 @@ function ensure_installed (){
 	linfo "checking for $PROG will install $PACKAGE"
 	installed=$(if_installed "$PROG")
 	if [ $? -eq 1 ]; then
-		sudo apt-get install "$PACKAGE"
+		apt-get install "$PACKAGE"
 		return $?
 	else
 		lwarn "$PROG is already installed: $installed"

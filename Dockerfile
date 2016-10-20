@@ -1,4 +1,4 @@
-FROM ubuntu:14.04
+FROM ubuntu:16.04
 
 MAINTAINER "James Fairbanks" <james.fairbanks@gtri.gatech.edu>
 
@@ -35,6 +35,7 @@ RUN apt-get install -qq -y \
                 unzip                       \
                 wget                        \
                 vim
+RUN wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py
 
 # Binaries built with checkmake of bedrock libraries.
 RUN wget --quiet http://130.207.211.77/packages/libelemental_0.84-p1-1_amd64.deb &&   \
@@ -57,7 +58,7 @@ COPY ./requirements.txt /var/www/bedrock-requirements.txt
 
 RUN pip install -U pip && hash -r && pip install -r /var/www/bedrock-requirements.txt
 
-RUN cd /var/www && curl --silent http://10.50.76.157/packages/opals.tar.gz | tar xz
+RUN cd /var/www && curl --silent http://130.207.211.77/packages/opals.tar.gz | tar xz
 # ADD http://127.0.0.1:8000/opals.tar.gz /root/bedrock/opals-sources
 
 # RUN mv /opals-sources /root/bedrock/opals-sources

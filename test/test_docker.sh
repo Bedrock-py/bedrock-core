@@ -22,7 +22,14 @@ ID=$(docker run -p 81:81 -p 82:82 -d  bedrock)
 echo "docker container ID:$ID is running"
 # TODO find a better way to wait for mongo to start.
 sleep 5
+set +e
 docker exec $ID sh -c 'cd /var/www/bedrock && ./bin/setup.py'
+if [ $? -ne 0 ]; then
+    echo "FATAL: setup.py failed run docker rm -f $ID to remove docker instance"
+    echo "FATAL: setup.py failed run docker exec -it $ID bash to connect to docker instance"
+    exit 1
+fi
+
 # END SETUP PHASE
 
 echo "ran setup.py"
