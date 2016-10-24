@@ -11,20 +11,31 @@
 # in whole or in part, is forbidden except by the express written
 # permission of the Georgia Tech Research Institute.
 #****************************************************************/
+from __future__ import print_function
 
-from flask import Flask, request, jsonify, redirect, url_for, g, abort, send_from_directory
-import markdown, json
-from flask import stream_with_context, request, Response
-import pymongo, sys, json, os, socket, shutil, string, re
-import utils
-from werkzeug import secure_filename
+import json
+import os
+import re
+import shutil
+import socket
+import string
+import subprocess
+import sys
+import traceback
+from datetime import datetime
+from multiprocessing import Process, Queue
+
+import pymongo
+from flask import (Flask, Response, abort, g, jsonify, redirect, request,
+                   send_from_directory, stream_with_context, url_for)
 from flask.ext import restful
 from flask.ext.restplus import Api, Resource, fields
-from datetime import datetime
-import subprocess
-from multiprocessing import Process, Queue
-from CONSTANTS import *
-import traceback
+from werkzeug import secure_filename
+
+import markdown
+import utils
+from CONSTANTS import MONGO_HOST, MONGO_PORT, ANALYTICS_DB_NAME, ANALYTICS_COL_NAME, ANALYTICS_OPALS
+from CONSTANTS import RESULTS_COL_NAME, RESUTLS_PATH
 
 ALLOWED_EXTENSIONS = ['py']
 
@@ -438,9 +449,9 @@ class Analytics(Resource):
                 return "No resource at that URL", 404
 
             #get the input data
-            print "hi25"
+            print( "hi25" )
             data = request.get_json()
-            print data
+            print( data )
             parameters = data['parameters']
             inputs = data['inputs']
             result = utils.classify(model_id, parameters, inputs)
@@ -776,7 +787,7 @@ class Results(Resource):
 
         @api.doc(responses={200: 'Success', 404: 'No resource at that URL'})
         @api.doc(model='Result')
-        def get(self, src_id,res_id):
+        def get(self, src_id, res_id):
             '''
             Returns the specified result.
             '''
@@ -797,5 +808,3 @@ class Results(Resource):
                         return {'result': response}
 
             return 'No resource at that URL.', 404
-
-

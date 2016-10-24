@@ -11,47 +11,49 @@
 # in whole or in part, is forbidden except by the express written
 # permission of the Georgia Tech Research Institute.
 #****************************************************************/
+from __future__ import print_function
 
-import os
-import pymongo
-import numpy as np
-from datetime import datetime
 import csv
 from datetime import datetime
-import pandas as pd
+from importlib import import_module
+import os
 import uuid
-from CONSTANTS import *
+from CONSTANTS import MONGO_HOST, MONGO_PORT, ANALYTICS_COL_NAME, ANALYTICS_DB_NAME, ANALYTICS_OPALS
+import numpy as np
+import pandas as pd
+import pymongo
 
 def getNewId():
-	return uuid.uuid4().hex
+    return uuid.uuid4().hex
 
 def getCurrentTime():
-	return str(datetime.now())
+    return str(datetime.now())
 
-#get a unique folder name and create the folder, return the filepath
 def setUpDirectory():
-    dirName = uuid.uuid4().hex
+    """get a unique folder name and create the folder, return the filepath"""
+    dirName = getNewId()
     # dirName = datetime.now().strftime("%Y%m%d%H%M%S%f")
-    rootpath = DIRPATH + dirName + '/'
+    rootpath = os.path.join(DIRPATH, dirName, '/')
     os.makedirs(rootpath)
     return DIRPATH, dirName
 
 def setUpDirectoryMatrix(src_id):
-    dirName = uuid.uuid4().hex
+    dirName = getNewId()
     # dirName = datetime.now().strftime("%Y%m%d%H%M%S%f")
-    rootpath = DIRPATH + src_id + '/' + dirName + '/'
+    rootpath = os.path.join(DIRPATH, src_id, '/', dirName, '/')
     os.makedirs(rootpath)
     return rootpath, dirName
 
 
-#use pandas to load the csv file into the dataframe, 
-#using a header if appropriate
 def loadMatrix(filepath):
+    """
+    use pandas to load the csv file into the dataframe,
+    using a header if appropriate
+    """
     with open(filepath, 'rbU') as csvfile:
         snippet = csvfile.read(2048)
         sniffer = csv.Sniffer()
         dialect = sniffer.sniff(snippet)
-
     if sniffer.has_header(snippet):
         df = pd.read_csv(filepath, dialect=dialect)
     else:
@@ -59,10 +61,12 @@ def loadMatrix(filepath):
 
     return df
 
-#write the output files associated with each loaded file
-#matrix.csv, features.txt, features_original.txt, and any non-numeric fields' mappings
 def writeFiles(maps, matrixFeatures, matrixFeaturesOriginal, rootpath, return_data=False):
-	#make directory
+    """
+    write the output files associated with each loaded file
+    matrix.csv, features.txt, features_original.txt, and any non-numeric fields' mappings
+    """
+    #make directory
     if not os.path.exists(rootpath):
         os.makedirs(rootpath)
 
@@ -98,13 +102,13 @@ def writeFiles(maps, matrixFeatures, matrixFeaturesOriginal, rootpath, return_da
     toReturn = []
     #convert lists to numpy arrays
     #matrix is documents x features (i.e. rows = individual items and columns = features)
-    with open(rootpath + '/' + 'matrix.csv', 'w') as matrix:        
+    with open(rootpath + '/' + 'matrix.csv', 'w') as matrix:
         for i in range(len(toWrite[0])):
             temp = []
             for each in toWrite:
                 temp.append(each[i])
                 if return_data:
-                	toReturn.append(temp)
+                    toReturn.append(temp)
             matrix.write(','.join(temp) + '\n')
 
     if return_data:
@@ -133,14 +137,14 @@ def updateFiles(maps, matrixFeatures, matrixFeaturesOriginal, rootpath, return_d
     toReturn = []
     #convert lists to numpy arrays
     #matrix is documents x features (i.e. rows = individual items and columns = features)
-    with open(rootpath + '/' + 'matrix.csv', 'a') as matrix:        
+    with open(rootpath + '/' + 'matrix.csv', 'a') as matrix:
         for i in range(len(toWrite[0])):
             temp = []
             for each in toWrite:
                 temp.append(each[i])
             matrix.write(','.join(temp) + '\n')
             if return_data:
-            	toReturn.append(temp)
+                toReturn.append(temp)
 
     if return_data:
         return toReturn
@@ -181,7 +185,7 @@ def run_analysis(queue, analytic_id, parameters, inputs, storepath, name):
             raise
             queue.put(None)
         alg.write_results(storepath)
-        print classname + ' successful'
+        print( classname + ' successful' )
         # return alg.get_outputs()
         queue.put(alg.get_outputs())
     else:
@@ -216,7 +220,7 @@ def test_analysis(analytic_id, filepath, storepath):
             alg.compute(filepath, storepath=storepath)
             alg.write_results(storepath)
         except:
-            print "Running Analytic %s failed on file %s storepath=%s".format(analytic_id, filepath, storepath)
+            print( "Running Analytic %s failed on file %s storepath=%s".format(analytic_id, filepath, storepath) )
             return False
         else:
             return True
@@ -225,7 +229,7 @@ def test_analysis(analytic_id, filepath, storepath):
 
 def write_analytic(text, classname):
     time = datetime.now()
-    analytic_id = classname 
+    analytic_id = classname
     # + str(time.year) + str(time.month) + str(time.day) + str(time.hour) + str(time.minute) + str(time.second)
 
     with open(ANALYTICS_OPALS + analytic_id + '.py', 'w') as alg:
@@ -254,7 +258,7 @@ class Algorithm(object):
             return True
         except AttributeError:
             raise
-            print 'Necessary attribute(s) not initialized'
+            print( 'Necessary attribute(s) not initialized' )
             return False
 
 
@@ -292,7 +296,7 @@ class Algorithm(object):
                             line = ','.join([str(x) for x in element])
                             featuresFile.write(line + '\n')
                     elif 'json' in key:
-                        featuresFile.write(outputData) 
+                        featuresFile.write(outputData)
 
     def get_results(self):
         return self.get_outputs()
@@ -314,5 +318,3 @@ class Algorithm(object):
 
     def get_outputs(self):
         return self.outputs
-
-

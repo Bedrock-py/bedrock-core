@@ -17,7 +17,7 @@ import json
 import uuid
 from datetime import datetime
 import pymongo
-from CONSTANTS import *
+from CONSTANTS import MONGO_HOST, MONGO_PORT, DATALOADER_COL_NAME, DATALOADER_DB_NAME, DATALOADER_PATH
 import sys
 import traceback
 
