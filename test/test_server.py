@@ -17,11 +17,7 @@ if __name__ == "__main__":
     import argparse
     PARSER = argparse.ArgumentParser(
         description='test runner for bedrock-core, run from the client machine')
-    PARSER.add_argument(
-        '--port',
-        '-p',
-        type=int,
-        help='the port number for bedrock api default:81')
+    PARSER.add_argument('--port', '-p', type=int, help='the port number for bedrock api default:81')
     ARGS = PARSER.parse_args()
     if ARGS.port:
         SERVER = "http://localhost:%d/" % ARGS.port
@@ -80,8 +76,7 @@ def check_pca(api):
     resp = api.analytic("Pca")
     endpoint = api.endpoint("analytics", "analytics/dimred")
     dimreds = requests.get(endpoint).json()
-    assert 'Pca' in (d['analytic_id']
-                     for d in dimreds), "Failed to find Pca in dimreds list"
+    assert 'Pca' in (d['analytic_id'] for d in dimreds), "Failed to find Pca in dimreds list"
     pprint(resp.json())
     assert resp.status_code == 200, "Failure: Pca is not installed on the server."
     return resp
@@ -89,15 +84,13 @@ def check_pca(api):
 
 def check_put(api, ssname, filename, ingest_id, group_id):
     """check that we can upload a source to the dataloader"""
-    resp = api.put_source(ssname, ingest_id, group_id,
-                          {'file': open(filename, "rb")})
+    resp = api.put_source(ssname, ingest_id, group_id, {'file': open(filename, "rb")})
     pprint(resp.headers)
     created = resp.json()
     pprint(created)
     src_id = created['src_id']
 
-    fetched = requests.get(api.endpoint("dataloader", "sources/%s" %
-                                        src_id)).json()
+    fetched = requests.get(api.endpoint("dataloader", "sources/%s" % src_id)).json()
     assert fetched['name'] == ssname, "failed to retrieve spreadsheet data"
     return created, fetched
 
@@ -107,8 +100,8 @@ def check_make_matrix(api, source_id, matbody):
     # echo $matbody |  http post http://192.168.33.102:81/dataloader/api/0.1/sources/$src_id/
     # postdata = json.loads(matbody)
     resp = api.post("dataloader", "sources/%s/" % source_id, json=matbody)
-    assert resp.status_code == 201, "Failed to create matrix: %d: %s" % (
-        resp.status_code, resp.text)
+    assert resp.status_code == 201, "Failed to create matrix: %d: %s" % (resp.status_code,
+                                                                         resp.text)
     return resp.json()
 
 
@@ -121,13 +114,12 @@ def check_analysis(api, analytic_id, source_id, postdata):
     return resp.json()
 
 
-def test_workflow_iris_pca():
-    """test that we can upload the IRIS dataset as a csv and run PCA then make a plot."""
-    print("Running tests against server:%s" % SERVER)
+def test_api_lists():
     bedrockapi = BedrockAPI(SERVER, VERSION)
     check_api_list(bedrockapi, "analytics", "analytics")
     check_api_list(bedrockapi, "analytics", "analytics/clustering")
     check_api_list(bedrockapi, "dataloader", "ingest")
+    check_api_list(bedrockapi, "dataloader", "filters")
     spreadsheet = check_spreadsheet(bedrockapi)
     check_api_list(bedrockapi, "visualization", "visualization")
 
@@ -140,6 +132,12 @@ def test_workflow_iris_pca():
     ans = bedrockapi.list("analytics", "analytics")
     pca = check_pca(bedrockapi)
 
+
+def test_workflow_iris_pca():
+    """test that we can upload the IRIS dataset as a csv and run PCA then make a plot."""
+    print("Running tests against server:%s" % SERVER)
+    bedrockapi = BedrockAPI(SERVER, VERSION)
+
     source_name = 'iris'
     group_id = 'default'
 
@@ -149,29 +147,22 @@ def test_workflow_iris_pca():
     source_id = ""
 
     if len(available_sources) < 4:
-        created, fetched = check_put(bedrockapi, source_name, "./iris.csv",
-                                     "Spreadsheet", group_id)
+        created, fetched = check_put(bedrockapi, source_name, "./iris.csv", "Spreadsheet", group_id)
         source_id = created['src_id']
         print("INFO: created source: %s" % source_id)
     else:
         source_id = available_sources[0]['src_id']
-        print("Available Sources are: %s" % (s['src_id']
-                                             for s in available_sources))
+        print("Available Sources are: %s" % (s['src_id'] for s in available_sources))
         print("Not uploading new source")
-        fetched = requests.get(
-            bedrockapi.endpoint("dataloader", "sources/%s/" % source_id)).json(
-            )
+        fetched = requests.get(bedrockapi.endpoint("dataloader", "sources/%s/" % source_id)).json()
 
-    endpoint = bedrockapi.endpoint("dataloader",
-                                   "sources/%s/explore/" % source_id)
+    endpoint = bedrockapi.endpoint("dataloader", "sources/%s/explore/" % source_id)
     print("INFO: Getting source: %s" % endpoint)
     resp = requests.get(endpoint)
     matrix_id = 'iris_mtx'
     matrix_name = 'iris_mtx'
 
-    feature_name_list = [
-        'petal_length', 'petal_width', 'sepal_length', 'sepal_width', 'species'
-    ]
+    feature_name_list = ['petal_length', 'petal_width', 'sepal_length', 'sepal_width', 'species']
     feature_name_list_original = [
         'petal_length', 'petal_width', 'sepal_length', 'sepal_width', 'species'
     ]
@@ -207,8 +198,7 @@ def test_workflow_iris_pca():
     resp = requests.post(url, json=matbody)
     log_failure(bedrockapi, "posting matrix %s" % matbody, resp, 201)
 
-    mtx_res = unpack_singleton_list(
-        check_make_matrix(bedrockapi, source_id, matbody))
+    mtx_res = unpack_singleton_list(check_make_matrix(bedrockapi, source_id, matbody))
     print("INFO: received matrix post response")
     pprint(mtx_res)
 
@@ -232,8 +222,7 @@ def test_workflow_iris_pca():
         }],
         'src': [mtx_res]    # this is a list because the server expects a list
     }
-    analysis_res = check_analysis(bedrockapi, analytic_id, source_id,
-                                  analysis_postdata)
+    analysis_res = check_analysis(bedrockapi, analytic_id, source_id, analysis_postdata)
     print("INFO: received analytic post response")
     analysis_res = unpack_singleton_list(analysis_res)
 
@@ -241,8 +230,7 @@ def test_workflow_iris_pca():
     pprint(analysis_res)
 
     viz_postdata = [mtx_res]
-    resp = bedrockapi.post(
-        "visualization", "visualization/", json=viz_postdata)
+    resp = bedrockapi.post("visualization", "visualization/", json=viz_postdata)
     log_failure(bedrockapi, "listing visualizations", resp, 200)
 
     plot_params_list = [{
@@ -265,9 +253,37 @@ def test_workflow_iris_pca():
     }
 
     plotname = "ClusterScatterTruth"
-    resp = bedrockapi.post(
-        "visualization", "visualization/%s/" % plotname, json=getplot_data)
+    resp = bedrockapi.post("visualization", "visualization/%s/" % plotname, json=getplot_data)
     log_failure(bedrockapi, "creating visualization %s" % plotname, resp, 200)
     plot = resp.json()
     validate_plot(plot)
     print("INFO: Tests PASS!")
+
+
+def test_matrix():
+    bedrockapi = BedrockAPI(SERVER, VERSION)
+    exploredresp = bedrockapi.get('dataloader', 'sources/explorable')
+    check_api_list(bedrockapi, "dataloader", "sources")
+    assert exploredresp.status_code == 200
+    explored = exploredresp.json()
+    print(explored)
+    mat = explored[0]
+    src_id = mat['src_id']
+    mat_id = mat['id']
+    rootpath = mat['rootdir']
+    print('matrix root path: %s %s %s' % (src_id, mat_id, rootpath))
+    sourceresp = bedrockapi.get('dataloader', 'sources/' + src_id)
+    assert sourceresp.status_code == 200
+    source = sourceresp.json()
+    assert source['src_id'] == src_id
+    # print('source')
+    # print(source)
+
+    outputresp = bedrockapi.get('dataloader', 'sources/%s/%s/output/' % (src_id, mat_id))
+    output = outputresp.text
+    print('output')
+    print(output)
+    # TODO this should be a 200 but the opals have to write there first
+    # see issue #45 on github.gatech.edu/Bedrock/bedrock-core
+    assert outputresp.status_code == 404
+    assert len(output) > 0

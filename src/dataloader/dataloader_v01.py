@@ -12,24 +12,67 @@
 # in whole or in part, is forbidden except by the express written
 # permission of the Georgia Tech Research Institute.
 #****************************************************************/
+from __future__ import print_function
 
-from flask import Flask, jsonify, request, redirect, url_for, send_from_directory, Response
+import json
+import os
+import re
+import shutil
+import socket
+import string
+import sys
+import traceback
+import urllib2
 from datetime import datetime
-from django.utils.encoding import smart_str, smart_unicode
+
+import pymongo
+import requests
+from bson.json_util import dumps
+from bson.objectid import ObjectId
+from flask import (Flask, Response, jsonify, redirect, request,
+                   send_from_directory, url_for)
 from flask.ext import restful
 from flask.ext.restplus import Api, Resource, fields
-import pymongo, sys, json, os, socket, shutil, string, re
-from bson.json_util import dumps
-import utils
 # raise Exception(utils)
 from werkzeug import secure_filename
-from bson.objectid import ObjectId
-import requests
-import urllib2
-from CONSTANTS import *
-import traceback
-from core.db import *
-from core.io import *
+
+import utils
+from CONSTANTS import DATALOADER_COL_NAME, DATALOADER_DB_NAME, DATALOADER_PATH
+from CONSTANTS import INGEST_COL_NAME, RESULTS_PATH, RESULTS_COL_NAME  #, RESPATH
+from CONSTANTS import FILTERS_COL_NAME
+from core.db import db_connect
+from core.io import write_source_file, write_source_config
+# from django.utils.encoding import smart_str, smart_unicode
+
+def explore(cur):
+    """yields the matrices combined with their source information for the /dataloader/explorable/ endpoint
+    a join on the matrices and sources.
+    """
+    for src in cur:
+        for matrix in src['matrices']:
+            exp = {}
+            exp['rootdir'] = matrix['rootdir']
+            exp['src_id'] = src['src_id']
+            exp['id'] = matrix['id']
+            exp['outputs'] = matrix['outputs']
+            exp['name'] = matrix['name']
+            exp['created'] = matrix['created']
+            exp['mat_type'] = matrix['mat_type']
+            yield exp
+
+def drop_id_key(record):
+    """returns a copy of record without the key _id """
+    return {key: value for key, value in record.items() if key != '_id'}
+
+def find_matrix(col, src_id, mat_id):
+    # matrix = col.find({'src_id':src_id, 'matrices.id':mtxid })
+    matrices = col.find({'src_id':src_id})[0]['matrices']
+    matrix_manual = None
+    for matrix in matrices:
+        if matrix['id'] == mat_id:
+            matrix_manual = matrix
+    # assert matrix == matrix_manual
+    return matrix_manual
 
 app = Flask(__name__)
 app.debug = True
@@ -152,7 +195,7 @@ class IngestModules(Resource):
         cur = col.find()
         ingest = []
         for c in cur:
-            response = {key: value for key, value in c.items() if key != '_id'}
+            response = drop_id_key(c)
             ingest.append(response)
 
         return ingest
@@ -172,7 +215,7 @@ class IngestModules(Resource):
                 return 'No resource at that URL', 401
 
             else:
-                response = {key: value for key, value in src.items() if key != '_id'}
+                response = drop_id_key(src)
 
                 return response
 
@@ -182,17 +225,14 @@ class Filters(Resource):
     @api.doc(model='Filter')
     def get(self):
         '''
-        Returns a list of available filters.
-        All filters registered in the system will be returned. If you believe there is a filter that exists in the system but is not present here, it is probably not registered in the MongoDB database.
+        Returns a list of available filters. All filters registered in the system
+        will be returned. If you believe there is a filter that exists in the
+        system but is not present here, it is probably not registered in the
+        MongoDB database.
         '''
         client, col = db_connect(FILTERS_COL_NAME)
         cur = col.find()
-        filters = []
-        for c in cur:
-            response = {key: value for key, value in c.items() if key != '_id'}
-            filters.append(response)
-
-        return filters
+        return map(drop_id_key, cur)
 
 
 @ns.route('/')
@@ -210,7 +250,7 @@ class Sources(Resource):
             try:
                 sources.append({key: value for key, value in src.items() if key != '_id' and key != 'stash'})
             except KeyError:
-                print src
+                print(src)
         return sources
 
     @api.hide
@@ -219,7 +259,7 @@ class Sources(Resource):
         Deletes all stored sources.
         This will permanently remove all sources from the system. USE CAREFULLY!
         '''
-        col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
+        client, col = db_connect(DATALOADER_COL_NAME)
         #remove the entries in mongo
         col.remove({})
         #remove the actual files
@@ -321,23 +361,10 @@ class Sources(Resource):
             '''
             Returns a list of generated matrices.
             '''
-
             client, col = db_connect(DATALOADER_COL_NAME)
             cur = col.find()
-            explorable = []
-            for src in cur:
-                for matrix in src['matrices']:
-                    exp = {}
-                    exp['rootdir'] = matrix['rootdir']
-                    exp['src_id'] = src['src_id']
-                    exp['id'] = matrix['id']
-                    exp['outputs'] = matrix['outputs']
-                    exp['name'] = matrix['name']
-                    exp['created'] = matrix['created']
-                    exp['mat_type'] = matrix['mat_type']
-                    explorable.append(exp)
-
-            return explorable
+            explorables = list(explore(cur))
+            return explorables
 
     @ns.route('/group/<group_name>/')
     class Group(Resource):
@@ -349,7 +376,7 @@ class Sources(Resource):
 
             client, col = db_connect(DATALOADER_COL_NAME)
             sources = col.find({'group_name':group_name})
-            response = [{key: value for key, value in src.items() if key != '_id'} for src in sources]
+            response = [drop_id_key(src) for src in sources]
 
             return response
 
@@ -382,7 +409,7 @@ class Sources(Resource):
                 return 'No resource at that URL', 401
 
             else:
-                response = {key: value for key, value in src.items() if key != '_id'}
+                response = drop_id_key(src)
 
                 return response
 
@@ -407,7 +434,7 @@ class Sources(Resource):
 
                     try:
                         res = res_col.find({'src_id':mat_id})[0]['results']
-                        print 'going to remove', RESPATH + mat_id
+                        print('going to remove', RESPATH + mat_id)
                         shutil.rmtree(RESPATH + mat_id)
                         res_col.remove({'src_id':mat_id})
 
@@ -578,7 +605,7 @@ class Sources(Resource):
                 else:
                     for matrix in matrices:
                         if matrix['id'] == mat_id:
-                            response = {key: value for key, value in matrix.items() if key != '_id'}
+                            response = drop_id_key(matrix)
 
                             return response
 
@@ -631,21 +658,21 @@ class Sources(Resource):
                     '''
                     client, col = db_connect(DATALOADER_COL_NAME)
                     try:
-                        matrices = col.find({'src_id':src_id})[0]['matrices']
-
+                        matrix = find_matrix(col, src_id, mat_id)
                     except IndexError:
                         return 'No resource at that URL.', 404
-
+                    except AssertionError:
+                        return 'Bad mongo query', 500
                     else:
-                        for matrix in matrices:
-                            if matrix['id'] == mat_id:
-                                output_path = matrix['rootdir'] + 'output.txt'
-                                with open(output_path) as output:
-                                    text = output.read()
+                        try:
+                            output_path = matrix['rootdir'] + 'output.txt'
+                            with open(output_path) as output:
+                                text = output.read()
+                            return text
+                        except:
+                            return 'No Output document for %s/%s'%(src_id, mat_id), 404
 
-                                return text
-
-                        return 'No resource at that URL.', 404
+                    return 'No resource at that URL.', 404
 
             @ns.route('/<src_id>/<mat_id>/features/')
             class Features(Resource):
@@ -657,24 +684,20 @@ class Sources(Resource):
                     '''
                     client, col = db_connect(DATALOADER_COL_NAME)
                     try:
-                        matrices = col.find({'src_id':src_id})[0]['matrices']
-
+                        matrix = find_matrix(col, src_id, mat_id)
                     except IndexError:
                         return 'No resource at that URL.', 404
-
+                    except AssertionError:
+                        return 'Bad Mongo Query', 500
                     else:
-                        for matrix in matrices:
-                            if matrix['id'] == mat_id:
-                                rootdir = matrix['rootdir']
-                                try:
-                                    features_filepath = rootdir + 'features.txt'
-                                    with open(features_filepath) as features_file:
-                                        features = features_file.read().split("\n")
-                                        features.pop()
-                                    response = features
-                                except IOError:
-                                    response = []
+                        rootdir = matrix['rootdir']
+                        features_filepath = rootdir + 'features.txt'
+                        try:
+                            with open(features_filepath) as features_file:
+                                features = features_file.read().split("\n")
+                                features.pop()
+                            response = features
+                        except IOError:
+                            response = []
 
-                                return response
-
-                        return 'No resource at that URL.', 404
+                        return response
