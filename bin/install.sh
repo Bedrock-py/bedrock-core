@@ -2,6 +2,8 @@
 set -e
 DIR=`pwd`
 TARGET=/var/www/bedrock
+mkdir -p "$TARGET"
+export PATH="$(pwd)/bin/:$PATH"
 
 if ! [ -d $DIR ]; then
     echo "FATA: cannot find DIR:$DIR" >&2
@@ -9,7 +11,7 @@ if ! [ -d $DIR ]; then
 fi
 echo "Bedrock code found in $DIR"
 echo "Bedrock code installing to $TARGET"
-# sudo ln -s "$DIR" "$TARGET"
+# ln -s "$DIR/src/src" "$TARGET"
 # ls "$TARGET"
 echo "Bedrock installed in $TARGET..."
 
@@ -18,16 +20,26 @@ const_link () {
     TPATH="$TARGET/src/$API/CONSTANTS.py"
     DSTPATH="$TARGET/src/CONSTANTS.py"
     if ! [ -r "$TPATH" ]; then
-        # sudo ln -s "$DSTPATH" "$TPATH"
+        # ln -s "$DSTPATH" "$TPATH"
         return $?
     fi
 }
+
 const_link dataloader
 const_link workflows
 const_link analytics
 const_link visualization
 
-ln -s /var/www/opals-sources /var/www/bedrock/
+OPALPATH=/var/www/opals-sources
+
+# echo "INFO: linking opals"
+# ln -s "$OPALPATH" "$TARGET"
+
+if [ ! -d $OPALPATH ]; then
+    mkdir -p $OPALPATH
+fi
+
+
 OPAL_TAR="/var/www/opals.tar.gz"
 if [ -r $OPAL_TAR ]; then
     echo "Extracting $OPAL_TAR into $(pwd)"
@@ -37,14 +49,21 @@ else
 fi
 
 echo "INFO: setting up apache for bedrock"
-sudo ln -s /var/www/bedrock/conf/bedrock.conf /etc/apache2/sites-available/
-sudo a2ensite bedrock.conf
+ln -s "$TARGET/conf/bedrock.conf" /etc/apache2/sites-available/
+# ls $TARGET
+a2ensite bedrock.conf
 # sudo service apache2 reload
 
 echo "INFO: making links for bedrock"
-sudo ln -s /var/www/bedrock/bin/opal.sh /usr/local/bin/opal
-sudo mkdir -p /var/www/bedrock/src/analytics/data
-sudo chown www-data /var/www/bedrock/src/analytics/data
-sudo mkdir -p /var/www/bedrock/src/dataloader/data
-sudo chown www-data /var/www/bedrock/src/dataloader/data
-sudo chown www-data /var/www/bedrock/src/analytics/opals
+OPALBIN=/usr/local/bin/opal
+ln -s /var/www/bedrock/bin/opal.sh "$OPALBIN"
+if [ ! -r "$OPALBIN" ]; then
+    echo "WARN: failed to install opal.sh to $OPALBIN"
+fi
+
+mkdir -p /var/www/bedrock/src/{analytics,dataloader,visualization}/opals
+mkdir -p /var/www/bedrock/src/{analytics,dataloader,visualization}/data
+chown www-data /var/www/bedrock/src/{analytics,dataloader,visualization}/opals
+chown www-data /var/www/bedrock/src/{analytics,dataloader,visualization}/data
+touch /var/www/bedrock/src/{analytics,dataloader,visualization}/opals/__init__.py
+

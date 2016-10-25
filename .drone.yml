@@ -1,0 +1,16 @@
+workspace:
+  path: /var/www/bedrock
+pipeline:
+  build:
+    # image: python:${PYTHON_VERSION}
+    image: jpfa/weblytics
+    commands:
+      - bash bin/cibuild.sh
+# services:
+#   mongo:
+#     image: mongo
+
+matrix:
+  PYTHON_VERSION:
+    - 2.7
+    # - 3.5

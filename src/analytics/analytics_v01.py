@@ -11,28 +11,43 @@
 # in whole or in part, is forbidden except by the express written
 # permission of the Georgia Tech Research Institute.
 #****************************************************************/
+from __future__ import print_function
 
-from flask import Flask, request, jsonify, redirect, url_for, g, abort, send_from_directory
-import markdown, json
-from flask import stream_with_context, request, Response
-import pymongo, sys, json, os, socket, shutil, string, re
-import utils
-from werkzeug import secure_filename
+import json
+import os
+import re
+import shutil
+import socket
+import string
+import subprocess
+import sys
+import traceback
+from datetime import datetime
+from multiprocessing import Process, Queue
+
+import pymongo
+from flask import (Flask, Response, abort, g, jsonify, redirect, request,
+                   send_from_directory, stream_with_context, url_for)
 from flask.ext import restful
 from flask.ext.restplus import Api, Resource, fields
-from datetime import datetime
-import subprocess
-from multiprocessing import Process, Queue
-from CONSTANTS import *
-import traceback
+from werkzeug import secure_filename
+
+import markdown
+import utils
+from CONSTANTS import MONGO_HOST, MONGO_PORT, ANALYTICS_DB_NAME, ANALYTICS_COL_NAME, ANALYTICS_OPALS
+from CONSTANTS import RESULTS_COL_NAME, RESULTS_PATH
 
 ALLOWED_EXTENSIONS = ['py']
 
 app = Flask(__name__)
 app.debug = True
 
-api = Api(app, version="0.1", title="Analytics API",
-    description="Analytics-Framework API supporting creation and use of analytics (Copyright &copy 2015, Georgia Tech Research Institute)")
+api = Api(
+    app,
+    version="0.1",
+    title="Analytics API",
+    description="Analytics-Framework API supporting creation and use of analytics (Copyright &copy 2015, Georgia Tech Research Institute)"
+)
 
 ns_a = api.namespace('analytics')
 ns_r = api.namespace('results')
@@ -51,7 +66,10 @@ def analytics_oftype(typename):
     analytics = []
     for src in cur:
         if src['type'] == typename:
-            response = {key: value for key, value in src.items() if key != '_id'}
+            response = {
+                key: value
+                for key, value in src.items() if key != '_id'
+            }
             analytics.append(response)
     return analytics
 
@@ -59,92 +77,136 @@ def analytics_oftype(typename):
 
 
 @api.model(fields={
-                'created': fields.String(description='Timestamp of creation'),
-                'id': fields.String(description='Unique ID for the matrix', required=True),
-                'src_id': fields.String(description='Unique ID for the source used to generate the matrix', required=True),
-                'mat_type': fields.String(description='Matrix type'),
-                'name': fields.String(description='Matrix name'),
-                'outputs': fields.List(fields.String, description='List of output files associated with the matrix', required=True),
-                'rootdir': fields.String(description='Path to the associated directory', required=True),
-                })
+    'created': fields.String(description='Timestamp of creation'),
+    'id': fields.String(
+        description='Unique ID for the matrix', required=True),
+    'src_id': fields.String(
+        description='Unique ID for the source used to generate the matrix',
+        required=True),
+    'mat_type': fields.String(description='Matrix type'),
+    'name': fields.String(description='Matrix name'),
+    'outputs': fields.List(
+        fields.String,
+        description='List of output files associated with the matrix',
+        required=True),
+    'rootdir': fields.String(
+        description='Path to the associated directory', required=True),
+})
 class Matrix(fields.Raw):
     def format(self, value):
-        return { 
-                'created': value.created,
-                'id': value.id,
-                'src_id': value.src_id,
-                'mat_type': value.mat_type,
-                'name': value.name,
-                'outputs': value.outputs,
-                'rootdir': value.rootdir
-                }
+        return {
+            'created': value.created,
+            'id': value.id,
+            'src_id': value.src_id,
+            'mat_type': value.mat_type,
+            'name': value.name,
+            'outputs': value.outputs,
+            'rootdir': value.rootdir
+        }
+
 
 @api.model(fields={
-                'attrname': fields.String(description='Python variable name', required=True),
-                'max': fields.Float(description='Max value to allow for input'),
-                'min': fields.Float(description='Min value to allow for input'),
-                'name': fields.String(description='Name to use for display', required=True),
-                'step': fields.Float(description='Step to use for numeric values'),
-                'type': fields.String(description='Kind of html input type to display', required=True),
-                'value': fields.String(description='Default value to use', required=True),
-                })
+    'attrname': fields.String(
+        description='Python variable name', required=True),
+    'max': fields.Float(description='Max value to allow for input'),
+    'min': fields.Float(description='Min value to allow for input'),
+    'name': fields.String(
+        description='Name to use for display', required=True),
+    'step': fields.Float(description='Step to use for numeric values'),
+    'type': fields.String(
+        description='Kind of html input type to display', required=True),
+    'value': fields.String(
+        description='Default value to use', required=True),
+})
 class AnalyticParams(fields.Raw):
     def format(self, value):
-        return { 
-                'attrname': value.attrname,
-                'max': value.max,
-                'min': value.min,
-                'name': value.name,
-                'step': value.step,
-                'type': value.type,
-                'value': value.value,
-                }
+        return {
+            'attrname': value.attrname,
+            'max': value.max,
+            'min': value.min,
+            'name': value.name,
+            'step': value.step,
+            'type': value.type,
+            'value': value.value,
+        }
 
-api.model('Analytic', {
-    'analytic_id': fields.String(description='Unique ID for the analytic', required=True),
-    'classname': fields.String(description='Classname within the python file', required=True),
-    'description': fields.String(description='Description for the analytic'),
-    'inputs': fields.List(fields.String, description='List of input files for the analytic', required=True),
-    'name': fields.String(description='Analytic name'),
-    'parameters': fields.List(AnalyticParams, description='List of input parameters needed by the analytic'),
-    'outputs': fields.List(fields.String, description='List of output files generated by the analytic', required=True),
-    'type': fields.String(description='Type of analytic: {Dimension Reduction, Clustering, Classification, Statistics}', required=True),
+
+api.model(
+    'Analytic', {
+        'analytic_id': fields.String(
+            description='Unique ID for the analytic', required=True),
+        'classname': fields.String(
+            description='Classname within the python file', required=True),
+        'description':
+        fields.String(description='Description for the analytic'),
+        'inputs': fields.List(
+            fields.String,
+            description='List of input files for the analytic',
+            required=True),
+        'name': fields.String(description='Analytic name'),
+        'parameters': fields.List(
+            AnalyticParams,
+            description='List of input parameters needed by the analytic'),
+        'outputs': fields.List(
+            fields.String,
+            description='List of output files generated by the analytic',
+            required=True),
+        'type': fields.String(
+            description='Type of analytic: {Dimension Reduction, Clustering, Classification, Statistics}',
+            required=True),
+    })
+
+
+@api.model(fields={
+    'analytic_id': fields.String(
+        description='Unique ID for the analytic used to generate the result',
+        required=True),
+    'created': fields.String(description='Timestamp of creation'),
+    'id': fields.String(
+        description='Unique ID for the result', required=True),
+    'name': fields.String(description='Result name'),
+    'parameters': fields.List(
+        AnalyticParams,
+        description='List of input parameters used by the analytic'),
+    'ouptuts': fields.List(
+        fields.String,
+        description='List of output files associated with that result',
+        required=True),
+    'rootdir': fields.String(
+        description='Path to the associated directory', required=True),
+    'src_id': fields.String(
+        description='Unique ID for the matrix used to generate the result',
+        required=True),
 })
-
-
-@api.model(fields={ 
-                'analytic_id': fields.String(description='Unique ID for the analytic used to generate the result', required=True),
-                'created': fields.String(description='Timestamp of creation'),
-                'id': fields.String(description='Unique ID for the result', required=True),
-                'name': fields.String(description='Result name'),
-                'parameters': fields.List(AnalyticParams, description='List of input parameters used by the analytic'),
-                'ouptuts': fields.List(fields.String, description='List of output files associated with that result', required=True),
-                'rootdir': fields.String(description='Path to the associated directory', required=True),
-                'src_id': fields.String(description='Unique ID for the matrix used to generate the result', required=True),
-                })
 class Result(fields.Raw):
     def format(self, value):
-        return { 
-                'analytic_id': value.analytic_id,
-                'created': value.created,
-                'id': value.id,
-                'name': value.name,
-                'parameters': value.parameters,
-                'ouptuts': value.outputs,
-                'rootdir': value.rootdir,
-                'src_id': value.src_id
-                }
+        return {
+            'analytic_id': value.analytic_id,
+            'created': value.created,
+            'id': value.id,
+            'name': value.name,
+            'parameters': value.parameters,
+            'ouptuts': value.outputs,
+            'rootdir': value.rootdir,
+            'src_id': value.src_id
+        }
 
-api.model('Results', {
-    'results': fields.List(Result, description='List of results for this particular matrix', required=True),
-    'rootdir': fields.String(description='Path to the associated directory', required=True),
-    'src': Matrix(description='Matrix from which these results were generated'),
-    'src_id': fields.String(description='Unique ID for the matrix', required=True),
-})
 
+api.model(
+    'Results', {
+        'results': fields.List(
+            Result,
+            description='List of results for this particular matrix',
+            required=True),
+        'rootdir': fields.String(
+            description='Path to the associated directory', required=True),
+        'src':
+        Matrix(description='Matrix from which these results were generated'),
+        'src_id': fields.String(
+            description='Unique ID for the matrix', required=True),
+    })
 
 ###################################################################################################
-
 
 
 @ns_a.route('/')
@@ -160,7 +222,10 @@ class Analytics(Resource):
         cur = col.find()
         analytics = []
         for src in cur:
-            response = {key: value for key, value in src.items() if key != '_id'}
+            response = {
+                key: value
+                for key, value in src.items() if key != '_id'
+            }
             if response['type'] == 'Model':
                 if 'published' in response and response['published']:
                     analytics.append(response)
@@ -168,7 +233,6 @@ class Analytics(Resource):
                 analytics.append(response)
 
         return analytics
-
 
     @api.hide
     @api.doc(responses={201: 'Success', 415: 'Unsupported filetype'})
@@ -187,7 +251,9 @@ class Analytics(Resource):
             #save the file
             filename = secure_filename(file.filename)
             name = re.split('\.', filename)[0]
-            analytic_id = name + str(time.year) + str(time.month) + str(time.day) + str(time.hour) + str(time.minute) + str(time.second)
+            analytic_id = name + str(time.year) + str(time.month) + str(
+                time.day) + str(time.hour) + str(time.minute) + str(
+                    time.second)
             filepath = ANALYTICS_OPALS + analytic_id + '.py'
             file.save(filepath)
 
@@ -195,12 +261,14 @@ class Analytics(Resource):
             metadata = utils.get_metadata(analytic_id)
             metadata['analytic_id'] = analytic_id
 
-
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
             col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
 
             col.insert(metadata)
-            meta = {key: value for key, value in metadata.items() if key != '_id'}
+            meta = {
+                key: value
+                for key, value in metadata.items() if key != '_id'
+            }
         except:
             tb = traceback.format_exc()
             return tb, 406
@@ -224,7 +292,6 @@ class Analytics(Resource):
     #     with open(ANALYTICS_OPALS + analytic_id + '.py', 'w') as temp:
     #         temp.write('def get_classname():\n    return \'' + data['classname'] + '\'\n\n')
     #         temp.write(data['code'] + '\n\n')
-
 
     #     #test the alg with a dense matrix, show traceback, delete analytic file
     #     success = utils.test_analysis(analytic_id, TESTFILEPATH, TESTSTOREPATH)
@@ -252,8 +319,11 @@ class Analytics(Resource):
 
     @ns_a.route('/options/')
     class Options(Resource):
-        @api.doc(body='Matrix', params={'payload': 
-            '''Must be a list of the model described to the right. Try this: 
+        @api.doc(
+            body='Matrix',
+            params={
+                'payload':
+                '''Must be a list of the model described to the right. Try this: 
             [{
               "created": "string",
               "id": "string",
@@ -265,7 +335,8 @@ class Analytics(Resource):
               "rootdir": "string",
               "src_id": "string"
             }]
-            '''})
+            '''
+            })
         def post(self):
             '''
             Returns the applicable analytics.
@@ -295,14 +366,16 @@ class Analytics(Resource):
                         contains = False
                         break
                 if contains:
-                    response = {key: value for key, value in src.items() if key != '_id'}
+                    response = {
+                        key: value
+                        for key, value in src.items() if key != '_id'
+                    }
                     if response['type'] == 'Model':
                         if 'published' in response and response['published']:
                             analytics.append(response)
                     else:
                         analytics.append(response)
             return analytics
-
 
     @ns_a.route('/clustering/')
     class Clustering(Resource):
@@ -358,7 +431,10 @@ class Analytics(Resource):
             analytics = []
             for src in cur:
                 if src['type'] == 'Model':
-                    response = {key: value for key, value in src.items() if key != '_id'}
+                    response = {
+                        key: value
+                        for key, value in src.items() if key != '_id'
+                    }
                     analytics.append(response)
 
             return analytics
@@ -375,16 +451,24 @@ class Analytics(Resource):
             cur = col.find()
             analytics = []
             for src in cur:
-                if src['type'] == 'Model' and 'published' in src and src['published']:
-                    response = {key: value for key, value in src.items() if key != '_id'}
+                if src['type'] == 'Model' and 'published' in src and src[
+                        'published']:
+                    response = {
+                        key: value
+                        for key, value in src.items() if key != '_id'
+                    }
                     analytics.append(response)
 
             return analytics
 
-
     @ns_a.route('/models/publish/<model_id>/<flag>/')
     class Publish(Resource):
-        @api.doc(params={}, responses={201: 'Success', 406: 'Error', 404: 'No resource at that URL'})
+        @api.doc(params={},
+                 responses={
+                     201: 'Success',
+                     406: 'Error',
+                     404: 'No resource at that URL'
+                 })
         def post(self, model_id, flag):
             '''
             Publish/unpublish a model.
@@ -394,29 +478,45 @@ class Analytics(Resource):
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
             col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
             try:
-                analytic = col.find({'analytic_id':model_id})[0]
+                analytic = col.find({'analytic_id': model_id})[0]
             except IndexError:
                 return 'No resource at that URL.', 404
 
             # unpublish the model
             if flag == '0':
-                result = col.update_one({"analytic_id":analytic['analytic_id'],"_id":analytic['_id']},{'$set':{"published":False}})
+                result = col.update_one({
+                    "analytic_id": analytic['analytic_id'],
+                    "_id": analytic['_id']
+                }, {'$set': {
+                    "published": False
+                }})
                 if result:
                     return "Succesfully unpublished model " + model_id, 200
 
             # publish the model
             else:
-                result = col.update_one({"analytic_id":analytic['analytic_id'],"_id":analytic['_id']},{'$set':{"published":True}})
+                result = col.update_one({
+                    "analytic_id": analytic['analytic_id'],
+                    "_id": analytic['_id']
+                }, {'$set': {
+                    "published": True
+                }})
                 if result:
                     # still need to add appropriate host/IP
-                    return "Analytic available from /analytics/models/"+analytic['analytic_id'] + '/', 200
+                    return "Analytic available from /analytics/models/" + analytic[
+                        'analytic_id'] + '/', 200
 
-            return "Bad Request",400
+            return "Bad Request", 400
 
     @ns_a.route('/models/<model_id>/')
     class Classify(Resource):
-        @api.doc(params={'payload': 'Must be list of data to have classified.'}, 
-            responses={201: 'Success', 406: 'Error', 404: 'No resource at that URL'})
+        @api.doc(
+            params={'payload': 'Must be list of data to have classified.'},
+            responses={
+                201: 'Success',
+                406: 'Error',
+                404: 'No resource at that URL'
+            })
         def post(self, model_id):
             '''
             Apply a published model to the provided input data and return the results.
@@ -426,10 +526,10 @@ class Analytics(Resource):
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
             col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
             try:
-                analytic = col.find({'analytic_id':model_id})[0]
+                analytic = col.find({'analytic_id': model_id})[0]
             except IndexError:
                 return 'No resource at that URL.', 404
-            
+
             # make sure it is of type 'Model'
             if analytic['type'] != 'Model':
                 return "This analytic is not of type 'Model'", 406
@@ -438,20 +538,23 @@ class Analytics(Resource):
                 return "No resource at that URL", 404
 
             #get the input data
-            print "hi25"
+            print("hi25")
             data = request.get_json()
-            print data
+            print(data)
             parameters = data['parameters']
             inputs = data['inputs']
             result = utils.classify(model_id, parameters, inputs)
             return result, 200
 
-
     # @app.route('/analytics/<analytic_id>/', methods=['DELETE'])
     @ns_a.route('/<analytic_id>/')
-    @api.doc(params={'analytic_id': 'The ID assigned to a particular analtyic'})
+    @api.doc(
+        params={'analytic_id': 'The ID assigned to a particular analtyic'})
     class Analytic(Resource):
-        @api.doc(responses={204: 'Resource removed successfully', 404: 'No resource at that URL'})
+        @api.doc(responses={
+            204: 'Resource removed successfully',
+            404: 'No resource at that URL'
+        })
         def delete(self, analytic_id):
             '''
             Deletes specified analytic.
@@ -460,17 +563,17 @@ class Analytics(Resource):
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
             col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
             try:
-                analytic = col.find({'analytic_id':analytic_id})[0]
+                analytic = col.find({'analytic_id': analytic_id})[0]
 
             except IndexError:
                 return 'No resource at that URL.', 404
 
             else:
-                col.remove({'analytic_id':analytic_id})
+                col.remove({'analytic_id': analytic_id})
                 os.remove(ANALYTICS_OPALS + analytic_id + '.py')
 
                 return '', 204
-        
+
         @api.doc(responses={200: 'Success', 404: 'No resource at that URL'})
         @api.doc(model='Analytic')
         def get(self, analytic_id):
@@ -480,18 +583,24 @@ class Analytics(Resource):
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
             col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
             try:
-                analytic = col.find({'analytic_id':analytic_id})[0]
+                analytic = col.find({'analytic_id': analytic_id})[0]
             except IndexError:
                 try:
-                    analytic = col.find({'name':analytic_id})[0]
+                    analytic = col.find({'name': analytic_id})[0]
                 except IndexError:
                     return 'No resource at that URL.', 404
 
             else:
-                return {key: value for key, value in analytic.items() if key != '_id'}
+                return {
+                    key: value
+                    for key, value in analytic.items() if key != '_id'
+                }
 
         @api.doc(responses={201: 'Success', 406: 'Error'})
-        @api.doc(params={'payload': 'Must be a list of the model defined to the right.'}, body='Matrix')
+        @api.doc(params={
+            'payload': 'Must be a list of the model defined to the right.'
+        },
+                 body='Matrix')
         def post(self, analytic_id):
             '''
             Apply a certain analytic to the provided input data.
@@ -507,11 +616,12 @@ class Analytics(Resource):
             data = request.get_json(force=True)
             datasrc = data['src'][0]
             if isinstance(datasrc, list):
-                msg = "When Posting Analytic %s, datasrc was a list"%(analytic_id)
+                msg = "When Posting Analytic %s, datasrc was a list" % (
+                    analytic_id)
                 print(msg)
-                return msg, 400 #Bad Request
+                return msg, 400    #Bad Request
             else:
-                print("Datasource is a <%s>"%type(datasrc))
+                print("Datasource is a <%s>" % type(datasrc))
 
             src_id = datasrc['src_id']
             sub_id = datasrc['id']
@@ -525,7 +635,7 @@ class Analytics(Resource):
                 mat_id = datasrc['src_id']
             else:
                 mat_id = sub_id
-            storepath = RESUTLS_PATH + mat_id + '/' + res_id + '/'
+            storepath = os.path.join(RESULTS_PATH, mat_id, res_id)
             os.makedirs(storepath)
 
             # print("Extracted info for analytic:%s\n %s"%(analytic_id, {
@@ -540,8 +650,9 @@ class Analytics(Resource):
             queue = Queue()
             try:
                 #single process for now
-                utils.run_analysis(queue, analytic_id, parameters, inputs, storepath, name)
-                
+                utils.run_analysis(queue, analytic_id, parameters, inputs,
+                                   storepath, name)
+
                 #multiprocess solution from before
                 # p = Process(target=utils.run_analysis, args=(queue, analytic_id, parameters, inputs, storepath, name))
                 # p.start()
@@ -555,15 +666,15 @@ class Analytics(Resource):
                 #store metadata
                 res_col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
                 try:
-                    src = res_col.find({'src_id':mat_id})[0]
+                    src = res_col.find({'src_id': mat_id})[0]
                 except IndexError:
                     src = {}
-                    src['rootdir'] = RESUTLS_PATH + mat_id + '/'
+                    src['rootdir'] = os.path.join(RESULTS_PATH, mat_id) + '/'
                     src['src'] = data['src'][0]
                     src['src_id'] = data['src'][0]['id']
                     src['results'] = []
                     res_col.insert(src)
-                    src = res_col.find({'src_id':mat_id})[0]
+                    src = res_col.find({'src_id': mat_id})[0]
 
                 res = {}
                 res['id'] = res_id
@@ -575,20 +686,29 @@ class Analytics(Resource):
                 res['parameters'] = parameters
                 res['outputs'] = outputs
                 if isResultSource:
-                    res['res_id'] = [ el['id'] for el in data['src'] ]
+                    res['res_id'] = [el['id'] for el in data['src']]
                 results = []
                 for each in src['results']:
                     results.append(each)
                 results.append(res)
-                res_col.update({'src_id':mat_id}, { '$set': {'results': results} })
+                res_col.update({
+                    'src_id': mat_id
+                }, {'$set': {
+                    'results': results
+                }})
 
                 return res, 201
             else:
                 tb = traceback.format_exc()
                 return tb, 406
 
-
-        @api.doc(params={'payload': 'Must be list of data to have classified.'}, responses={201: 'Success', 406: 'Error', 404: 'No resource at that URL'})
+        @api.doc(
+            params={'payload': 'Must be list of data to have classified.'},
+            responses={
+                201: 'Success',
+                406: 'Error',
+                404: 'No resource at that URL'
+            })
         def patch(self, analytic_id):
             '''
             Apply a certain analytic to the provided input data and return the classification label(s).
@@ -598,7 +718,7 @@ class Analytics(Resource):
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
             col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
             try:
-                analytic = col.find({'analytic_id':analytic_id})[0]
+                analytic = col.find({'analytic_id': analytic_id})[0]
             except IndexError:
                 return 'No resource at that URL.', 404
 
@@ -616,6 +736,7 @@ class Analytics(Resource):
             result = analytics.classify(analytic_id, parameters, inputs)
             return result, 200
 
+
 @ns_r.route('/')
 class Results(Resource):
     @api.doc(model='Results')
@@ -628,7 +749,10 @@ class Results(Resource):
         cur = col.find()
         results = []
         for src in cur:
-            response = {key: value for key, value in src.items() if key != '_id'}
+            response = {
+                key: value
+                for key, value in src.items() if key != '_id'
+            }
             results.append(response)
 
         return results
@@ -644,8 +768,8 @@ class Results(Resource):
         #remove the entries in mongo
         col.remove({})
         #remove the actual files
-        for directory in os.listdir(RESUTLS_PATH):
-            file_path = os.path.join(RESUTLS_PATH, directory)
+        for directory in os.listdir(RESULTS_PATH):
+            file_path = os.path.join(RESULTS_PATH, directory)
             shutil.rmtree(file_path)
 
         return '', 204
@@ -674,9 +798,10 @@ class Results(Resource):
 
             return explorable
 
-    @ns_r.route('/download/<src_id>/<res_id>/<output_file>/<file_download_name>/')
+    @ns_r.route(
+        '/download/<src_id>/<res_id>/<output_file>/<file_download_name>/')
     class Download(Resource):
-        def get(self,src_id,res_id,output_file,file_download_name):
+        def get(self, src_id, res_id, output_file, file_download_name):
             '''
             Downloads the specified result.
             Returns the specific file indicated by the user.
@@ -685,23 +810,29 @@ class Results(Resource):
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
             col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
             try:
-                res = col.find({'src_id':src_id})[0]['results']
+                res = col.find({'src_id': src_id})[0]['results']
             except IndexError:
                 response = {}
                 # return ('No resource at that URL.', 404)
             else:
                 for result in res:
                     if result['id'] == res_id:
-                        return send_from_directory(result['rootdir'],output_file, as_attachment=True, attachment_filename=file_download_name)
+                        return send_from_directory(
+                            result['rootdir'],
+                            output_file,
+                            as_attachment=True,
+                            attachment_filename=file_download_name)
 
             return 'No resource at that URL.', 404
 
-
     @ns_r.route('/<src_id>/')
-    @api.doc(params={'src_id': 'The ID assigned to a particular result\'s source'})
+    @api.doc(
+        params={'src_id': 'The ID assigned to a particular result\'s source'})
     class ResultSrc(Resource):
-
-        @api.doc(responses={204: 'Resource removed successfully', 404: 'No resource at that URL'})
+        @api.doc(responses={
+            204: 'Resource removed successfully',
+            404: 'No resource at that URL'
+        })
         def delete(self, src_id):
             '''
             Deletes specified result tree.
@@ -711,14 +842,14 @@ class Results(Resource):
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
             col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
             try:
-                res = col.find({'src_id':src_id})[0]['results']
+                res = col.find({'src_id': src_id})[0]['results']
 
             except IndexError:
                 return 'No resource at that URL.', 404
 
             else:
-                col.remove({'src_id':src_id})
-                shutil.rmtree(RESUTLS_PATH + src_id)
+                col.remove({'src_id': src_id})
+                shutil.rmtree(os.path.join(RESULTS_PATH + src_id))
                 return '', 204
 
         @api.doc(model='Results')
@@ -729,23 +860,29 @@ class Results(Resource):
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
             col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
             try:
-                res = col.find({'src_id':src_id})[0]
+                res = col.find({'src_id': src_id})[0]
 
             except IndexError:
                 response = {}
                 # return ('No resource at that URL.', 404)
 
             else:
-                response = {key: value for key, value in res.items() if key != '_id'}
+                response = {
+                    key: value
+                    for key, value in res.items() if key != '_id'
+                }
             return response
 
-
     @ns_r.route('/<src_id>/<res_id>/')
-    @api.doc(params={'src_id': 'The ID assigned to a particular result\'s source'})
+    @api.doc(
+        params={'src_id': 'The ID assigned to a particular result\'s source'})
     @api.doc(params={'res_id': 'The ID assigned to a particular result'})
     class Result(Resource):
-        @api.doc(responses={204: 'Resource removed successfully', 404: 'No resource at that URL'})
-        def delete(self, src_id,res_id):
+        @api.doc(responses={
+            204: 'Resource removed successfully',
+            404: 'No resource at that URL'
+        })
+        def delete(self, src_id, res_id):
             '''
             Deletes specified result.
             This will permanently remove this result from the system. USE CAREFULLY!
@@ -753,7 +890,7 @@ class Results(Resource):
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
             col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
             try:
-                res = col.find({'src_id':src_id})[0]['results']
+                res = col.find({'src_id': src_id})[0]['results']
 
             except IndexError:
                 return 'No resource at that URL.', 404
@@ -767,23 +904,27 @@ class Results(Resource):
                     else:
                         found = True
                 if found:
-                    col.update({'src_id':src_id}, { '$set': {'results': results_new} })
+                    col.update({
+                        'src_id': src_id
+                    }, {'$set': {
+                        'results': results_new
+                    }})
                 else:
                     return 'No resource at that URL.', 404
 
-                shutil.rmtree(RESUTLS_PATH + src_id + '/' + res_id)
+                shutil.rmtree(os.path.join(RESULTS_PATH, src_id, res_id))
                 return '', 204
 
         @api.doc(responses={200: 'Success', 404: 'No resource at that URL'})
         @api.doc(model='Result')
-        def get(self, src_id,res_id):
+        def get(self, src_id, res_id):
             '''
             Returns the specified result.
             '''
             client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
             col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
             try:
-                res = col.find({'src_id':src_id})[0]['results']
+                res = col.find({'src_id': src_id})[0]['results']
 
             except IndexError:
                 response = {}
@@ -792,10 +933,11 @@ class Results(Resource):
             else:
                 for result in res:
                     if result['id'] == res_id:
-                        response = {key: value for key, value in result.items() if key != '_id'}
+                        response = {
+                            key: value
+                            for key, value in result.items() if key != '_id'
+                        }
 
                         return {'result': response}
 
             return 'No resource at that URL.', 404
-
-

@@ -13,8 +13,12 @@
 #****************************************************************/
 
 import argparse, sys
+from importlib import import_module
 sys.path.insert(1, '/var/www/bedrock/')
 sys.path.insert(1, '/var/www/bedrock/src/')
+import logging
+logging.basicConfig(level=logging.INFO)
+logging.debug('sys.path', 'sys.path')
 import analytics.utils
 import dataloader.utils
 import pymongo

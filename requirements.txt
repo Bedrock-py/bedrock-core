@@ -16,6 +16,7 @@ numpy
 pandas
 parsedatetime
 passlib
+pytest
 pymongo
 python-dateutil
 scikit-learn

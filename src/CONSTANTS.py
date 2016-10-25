@@ -17,11 +17,9 @@ ANALYTICS_OPALS = '/var/www/bedrock/src/analytics/opals/'
 ANALYTICS_DB_NAME = 'analytics'
 ANALYTICS_COL_NAME = 'analytics'
 RESULTS_COL_NAME = 'results'
-RESUTLS_PATH = '/var/www/bedrock/src/analytics/data/'
+RESULTS_PATH = '/var/www/bedrock/src/analytics/data/'
 
 USERMEMO_DB_NAME = "usermemo"
 MEMO_COL_NAME = "memo"
 USER_DB_NAME = "user"
 USER_COL_NAME = "users"
-
-
