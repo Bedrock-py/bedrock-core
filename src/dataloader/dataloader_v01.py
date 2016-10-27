@@ -15,6 +15,7 @@
 from __future__ import print_function
 
 import json
+import logging
 import os
 import re
 import shutil
@@ -73,6 +74,14 @@ def find_matrix(col, src_id, mat_id):
             matrix_manual = matrix
     # assert matrix == matrix_manual
     return matrix_manual
+
+def find_source(col, src_id):
+    """fing a source from pymongo collection"""
+    return col.find({'src_id':src_id})[0]
+
+def find_results(col, mat_id):
+    """find the list of results associated with a matrix"""
+    return col.find({'src_id':mat_id})[0]['results']
 
 app = Flask(__name__)
 app.debug = True
@@ -418,35 +427,47 @@ class Sources(Resource):
             Deletes specified source.
             This will permanently remove this source from the system. USE CAREFULLY!
             '''
-            client, col = db_connect(RESULTS_COL_NAME)
-
+            _, col = db_connect(DATALOADER_COL_NAME)
             try:
-                src = col.find({'src_id':src_id})[0]
-                matrices = col.find({'src_id':src_id})[0]['matrices']
+                src = find_source(col, src_id)
 
             except IndexError:
                 return 'No resource at that URL.', 404
 
             else:
-                for each in matrices:
-                    mat_id = each['id']
-                    shutil.rmtree(DATALOADER_PATH + src_id + '/' + mat_id)
+                try:
+                    matrices = src['matrices']
+                except KeyError:
+                    logging.info('No Matrices for source %s on delete', src_id)
+                else:
+                    _, rescol = db_connect(RESULTS_COL_NAME)
+                    for mat in matrices:
+                        mat_id = mat['id']
+                        # this subtree is deleted when the DATALOADER_PATH/src_id gets removed later
+                        # shutil.rmtree(os.path.join(DATALOADER_PATH, src_id, mat_id))
+                        try:
+                            # res = find_results(col, mat_id)
+                            logging.info('going to remove %s/%s', RESPATH, mat_id)
+                            shutil.rmtree(os.path.join(RESPATH, mat_id))
+                            rescol.remove({'src_id':mat_id})
 
-                    try:
-                        res = res_col.find({'src_id':mat_id})[0]['results']
-                        print('going to remove', RESPATH + mat_id)
-                        shutil.rmtree(RESPATH + mat_id)
-                        res_col.remove({'src_id':mat_id})
+                        except Exception as ex:
+                            logging.error('could not remove matrix results %s while deleting source %s exception:%s', mat_id, src_id, ex)
 
-                    except IndexError:
-                        pass
-
-                utils.delete(src)
-
-                col.remove({'src_id':src_id})
-                shutil.rmtree(DATALOADER_PATH + src_id)
-                return '', 204
-
+                # uses the dataloader opal deletion function
+                try:
+                    utils.delete(src)
+                except Exception as ex:
+                    return 'Dataloader opal failed to delete source: %s'%(src), 500
+                try:
+                    col.remove({'src_id':src_id})
+                except:
+                    return 'Failed to remove source from database', 500
+                try:
+                    shutil.rmtree(os.path.join(DATALOADER_PATH, src_id))
+                except:
+                    return 'Failed to delete source from disk', 500
+                return 'Deleted Source: %s'%src_id, 204
 
 
         @api.doc(model='Matrix', body='Source')

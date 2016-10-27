@@ -6,6 +6,7 @@ test.py: the main tests for bedrock.
 from pprint import pprint
 import requests
 from src.client.client import BedrockAPI
+from testhelp import expects
 
 VAGRANTSERVER = "http://192.168.33.102:81/"
 SERVER = "http://localhost:81/"
@@ -91,9 +92,34 @@ def check_put(api, ssname, filename, ingest_id, group_id):
     src_id = created['src_id']
 
     fetched = requests.get(api.endpoint("dataloader", "sources/%s" % src_id)).json()
-    assert fetched['name'] == ssname, "failed to retrieve spreadsheet data"
+    assert fetched['name'] == ssname, "failed to retrieve ingested data"
     return created, fetched
 
+
+@expects(204, "Failed to Delete")
+def check_delete_source(api, src_id):
+    """deletes a source by its id and checks the return code."""
+    url = api.endpoint("dataloader", "sources/%s" % src_id)
+    resp = requests.delete(url)
+    print(resp.text)
+    return resp
+
+def check_put_delete(api, ssname, filename, ingest_id, group_id):
+    ''' Check to make sure it can put a file then delete that same file '''
+
+    created, fetched = check_put(api, ssname, filename, ingest_id, group_id)
+    pprint(created)
+    src_id = created['src_id']
+    print('Put src_id: {}'.format(src_id))
+    check_delete_source(api, src_id)
+    fetch = requests.get(api.endpoint("dataloader", "sources/%s" % src_id))
+    print(fetch.json())
+    print(fetch.text)
+    assert fetch.status_code != 200, "Source was not deleted."
+    return created, fetched
+
+    # TODO one day deletions will tell you what they deleted so that you could check this.
+    # assert resp['src_id'] == created['src_id'], "Could not delete %s"%src_id
 
 def check_make_matrix(api, source_id, matbody):
     """check that matrices can be made from a source"""
@@ -287,3 +313,14 @@ def test_matrix():
     # see issue #45 on github.gatech.edu/Bedrock/bedrock-core
     assert outputresp.status_code == 404
     assert len(output) > 0
+
+
+def test_deletions():
+    bedrockapi = BedrockAPI(SERVER, VERSION)
+    available_sources = bedrockapi.list("dataloader", "sources/").json()
+    source = available_sources[0]
+    source_id = source['src_id']
+    fetched = requests.get(bedrockapi.endpoint("dataloader", "sources/%s/" % source_id)).json()
+    source_name = 'iris-to-delete'
+    group_id = 'default'
+    created, fetched = check_put_delete(bedrockapi, source_name, "./iris.csv", "Spreadsheet", group_id)
