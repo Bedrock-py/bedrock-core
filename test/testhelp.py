@@ -19,3 +19,19 @@ def expects(status_code, msg):
             return resp
         return wrapper
     return decorator
+
+def is_numeric(nptype):
+    """Test is a numpy test is numeric"""
+    name = nptype.name
+    return 'float' in name or 'int' in name or 'long' in name or 'complex' in name
+
+def column_types(dataframe):
+    """get a list of the column types for a dataframe."""
+    columntypes = []
+    for i, typ in enumerate(dataframe.dtypes.tolist()):
+        if is_numeric(typ):
+            columntypes.append('Numeric')
+        elif typ.name == 'object':
+            if typ.name == 'str' or isinstance(dataframe.ix[0, i], str):
+                columntypes.append('String')
+    return columntypes

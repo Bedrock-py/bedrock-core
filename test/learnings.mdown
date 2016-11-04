@@ -1,0 +1,84 @@
+INGEST API OPALS
+https://confluence.icl.gtri.org/pages/viewpage.action?spaceKey=BEDROCK&title=Opals
+
+Source code for ingest spreadsheet: 
+    https://github.gatech.edu/Bedrock/opal-dataloader-ingest-spreadsheet/blob/master/Spreadsheet.py
+    filters applied through ingest method
+    to apply filters to ingested dataset, use for example:
+        url = api.endpoint("dataloader", "sources/%s" % (source_id))
+        resp = requests.post(url, json=matbody)
+        where matbody['matrixFilters']'s keys are columns in the dataset and their associated values are {}'s of any filters you want to apply
+        for a full view of matbody, see test_workflow_iris_pca method in test_server.py 
+
+mtx_res - From test_server.py workflow_2
+	mtx_res is equal to fetched['matrices'][-1] - i.e. the most recent entry to the matrices list
+	you can get mtx_res by either posting a matrix definition using:
+	    mtx_res = check_make_matrix(api, source_id, matbody)
+	or by getting an existing matrix definition by:
+	    source_id, fetched = put_and_or_get_dataset(api, filepath_to_put, 
+	                                            source_id_of_dataset_to_get) 
+	    mtx_res = fetched['matrices][0] <-- or whatever index you want
+
+
+analysis_postdata - From test_server.py workflow_2
+	for Pca, analysis_postdata looks like this:
+	    analysis_postdata = {
+	        'inputs': {
+	            'features.txt': mtx_res,
+	            'matrix.csv': mtx_res
+	        },
+	        'name': 'iris-pca',
+	        'parameters': [{
+	            'attrname': 'numDim',
+	            'max': 15,
+	            'min': 1,
+	            'name': 'Dimensions',
+	            'step': 1,
+	            'type': 'input',
+	            'value': 2
+	        }],
+	        'src': [mtx_res]    
+	    }        
+	this is derived from 
+	    analytics/Pca Model Schema
+	        http://bisi3:9999/analytics/api/0.1/analytics/Pca/
+	            {
+	              "analytic_id": "Pca",
+	              "classname": "Pca",
+	              "description": "Performs PCA dimension reduction on the input dataset.",
+	              "inputs": [
+	                "matrix.csv",
+	                "features.txt"
+	              ],
+	              "name": "Principal Component Analysis",
+	              "outputs": [
+	                "matrix.csv",
+	                "features.txt"
+	              ],
+	              "parameters": [
+	                {
+	                  "attrname": "numDim",
+	                  "max": 15,
+	                  "min": 1,
+	                  "name": "Dimensions",
+	                  "step": 1,
+	                  "type": "input",
+	                  "value": 2
+	                }
+	              ],
+	              "type": "Dimension Reduction"
+	            }         
+	    Post_analytic Model Schema
+	        http://bisi3:9999/analytics/api/0.1/#!/analytics/post_analytic
+	        mtx_res contains the information that is required in these fields
+	            {
+	              "created": "string",
+	              "id": "string",
+	              "mat_type": "string",
+	              "name": "string",
+	              "outputs": [
+	                "string"
+	              ],
+	              "rootdir": "string",
+	              "src_id": "string"
+	            }
