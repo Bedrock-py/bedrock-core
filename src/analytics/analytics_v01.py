@@ -16,6 +16,7 @@ from __future__ import print_function
 import json
 import os
 import re
+from os.path import splitext
 import shutil
 import socket
 import string
@@ -26,6 +27,7 @@ from datetime import datetime
 from multiprocessing import Process, Queue
 
 import pymongo
+from pymongo import MongoClient
 from flask import (Flask, Response, abort, g, jsonify, redirect, request,
                    send_from_directory, stream_with_context, url_for)
 from flask.ext import restful
@@ -36,11 +38,19 @@ import markdown
 import utils
 from CONSTANTS import MONGO_HOST, MONGO_PORT, ANALYTICS_DB_NAME, ANALYTICS_COL_NAME, ANALYTICS_OPALS
 from CONSTANTS import RESULTS_COL_NAME, RESULTS_PATH
+from core.db import drop_id_key
+from core.exceptions import asserttype, InvalidUsage
 
 ALLOWED_EXTENSIONS = ['py']
 
 app = Flask(__name__)
 app.debug = True
+
+@app.errorhandler(InvalidUsage)
+def handle_invalid_usage(error):
+    response = jsonify(error.to_dict())
+    response.status_code = error.status_code
+    return response
 
 api = Api(
     app,
@@ -60,19 +70,46 @@ def analytics_oftype(typename):
 
     usage: analytics_oftype('Clustering')
     '''
-    client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-    col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+    _, col = analytics_collection()
     cur = col.find()
-    analytics = []
-    for src in cur:
-        if src['type'] == typename:
-            response = {
-                key: value
-                for key, value in src.items() if key != '_id'
-            }
-            analytics.append(response)
+    analytics = [drop_id_key(src) for src in cur if src['type'] == typename]
     return analytics
 
+def published_model(src):
+    """predicate for an analytic being a published model"""
+    return src['type'] == 'Model' and 'published' in src and src['published']
+
+def ismodel(src):
+    """predict if the argument is a model"""
+    return src['type'] == 'Model'
+
+def analytics_list(col):
+    """gets the list of analytics including published models"""
+    cur = col.find()
+    return [drop_id_key(src) for src in cur
+                     if published_model(src) or src['type'] != 'Model']
+
+
+def analytics_collection():
+    """connect to the database if necessary and return the analytics collection"""
+    db = getattr(g, '_mongodb', None)
+    if db is None:
+        db = g._mongodb = MongoClient(MONGO_HOST, MONGO_PORT)
+    return db, db[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+
+def results_collection():
+    """connect to the database if necessary and return the analytics collection"""
+    db = getattr(g, '_mongodb', None)
+    if db is None:
+        db = g._mongodb = MongoClient(MONGO_HOST, MONGO_PORT)
+    return db, db[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
+
+@app.teardown_appcontext
+def teardown_db(exception):
+    """closes the database connection"""
+    db = getattr(g, '_mongodb', None)
+    if db is not None:
+        db.close()
 ###################################################################################################
 
 
@@ -215,42 +252,30 @@ class Analytics(Resource):
     def get(self):
         '''
         Returns a list of available analytics.
-        All analytics registered in the system will be returned. If you believe there is an analytic that exists in the system but is not present here, it is probably not registered in the MongoDB database.
-        '''
-        client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
-        cur = col.find()
-        analytics = []
-        for src in cur:
-            response = {
-                key: value
-                for key, value in src.items() if key != '_id'
-            }
-            if response['type'] == 'Model':
-                if 'published' in response and response['published']:
-                    analytics.append(response)
-            else:
-                analytics.append(response)
+        All analytics registered in the system will be returned.
 
+        If you believe there is an analytic that exists in the system but is not present here, it is probably not registered in the MongoDB database.
+        '''
+        _, col = analytics_collection()
+        analytics = analytics_list(col)
         return analytics
 
     @api.hide
     @api.doc(responses={201: 'Success', 415: 'Unsupported filetype'})
     def put(self):
         '''
-        Add a new analytic via file upload
+        Add a new analytic via file upload. This is a security risk.
         '''
         try:
             time = datetime.now()
             # make the id more meaningful
             file = request.files['file']
-            ext = re.split('\.', file.filename)[1]
+            filename = secure_filename(file.filename)
+            name,  ext = splitext(filename)
             if not ext in ALLOWED_EXTENSIONS:
                 return 'This filetype is not supported.', 415
 
             #save the file
-            filename = secure_filename(file.filename)
-            name = re.split('\.', filename)[0]
             analytic_id = name + str(time.year) + str(time.month) + str(
                 time.day) + str(time.hour) + str(time.minute) + str(
                     time.second)
@@ -261,14 +286,9 @@ class Analytics(Resource):
             metadata = utils.get_metadata(analytic_id)
             metadata['analytic_id'] = analytic_id
 
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
-
+            _, col = analytics_collection()
             col.insert(metadata)
-            meta = {
-                key: value
-                for key, value in metadata.items() if key != '_id'
-            }
+            meta = drop_id_key(metadata)
         except:
             tb = traceback.format_exc()
             return tb, 406
@@ -307,8 +327,7 @@ class Analytics(Resource):
     #         metadata = utils.get_metadata(analytic_id)
     #         metadata['analytic_id'] = analytic_id
 
-    #         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-    #         col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+    #         _, col = analytics_collection()
 
     #         col.insert(metadata)
     #         meta = {key: value for key, value in metadata.items() if key != '_id'}
@@ -323,7 +342,7 @@ class Analytics(Resource):
             body='Matrix',
             params={
                 'payload':
-                '''Must be a list of the model described to the right. Try this: 
+                '''Must be a list of the model described to the right. Try this:
             [{
               "created": "string",
               "id": "string",
@@ -340,13 +359,13 @@ class Analytics(Resource):
         def post(self):
             '''
             Returns the applicable analytics.
-            Not all analytics are applicable for every dataset. This request requires a list of inputs and will return the analytics options available based on those inputs.
+            Not all analytics are applicable for every dataset.
+            This request requires a list of inputs and will return the analytics options available based on those inputs.
             '''
             data = request.get_json()
-            analytics = []
+            asserttype(data, list)
 
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+            _, col = analytics_collection()
             cur = col.find()
             analytics = []
             if len(data) != 1:
@@ -355,6 +374,7 @@ class Analytics(Resource):
                     outputsPersist.extend(res['outputs'])
             else:
                 outputsPersist = data[0]['outputs']
+            asserttype(outputsPersist, list)
             for src in cur:
                 contains = False
                 outputs = outputsPersist[:]
@@ -366,15 +386,9 @@ class Analytics(Resource):
                         contains = False
                         break
                 if contains:
-                    response = {
-                        key: value
-                        for key, value in src.items() if key != '_id'
-                    }
-                    if response['type'] == 'Model':
-                        if 'published' in response and response['published']:
+                    response = drop_id_key(src)
+                    if published_model(response) or response['type'] != 'Model':
                             analytics.append(response)
-                    else:
-                        analytics.append(response)
             return analytics
 
     @ns_a.route('/clustering/')
@@ -425,19 +439,9 @@ class Analytics(Resource):
             Returns a list of available trained models.
             All analytics registered in the system with a type of 'Model' will be returned. If you believe there is an analytic that exists in the system but is not present here, it is probably not registered in the MongoDB database.
             '''
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+            _, col = analytics_collection()
             cur = col.find()
-            analytics = []
-            for src in cur:
-                if src['type'] == 'Model':
-                    response = {
-                        key: value
-                        for key, value in src.items() if key != '_id'
-                    }
-                    analytics.append(response)
-
-            return analytics
+            return [drop_id_key(src) for src in cur if ismodel(src)]
 
     @ns_a.route('/models/published/')
     class Published(Resource):
@@ -446,20 +450,9 @@ class Analytics(Resource):
             '''
             Returns a list of published models.
             '''
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+            _, col = analytics_collection()
             cur = col.find()
-            analytics = []
-            for src in cur:
-                if src['type'] == 'Model' and 'published' in src and src[
-                        'published']:
-                    response = {
-                        key: value
-                        for key, value in src.items() if key != '_id'
-                    }
-                    analytics.append(response)
-
-            return analytics
+            return [drop_id_key(src) for src in cur if published_model(src)]
 
     @ns_a.route('/models/publish/<model_id>/<flag>/')
     class Publish(Resource):
@@ -475,8 +468,7 @@ class Analytics(Resource):
             This request is only applicable to analytics that are of type 'Model'.
             '''
             # get the analytic
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+            _, col = analytics_collection()
             try:
                 analytic = col.find({'analytic_id': model_id})[0]
             except IndexError:
@@ -523,8 +515,7 @@ class Analytics(Resource):
             This request is only applicable to analytics that are of type 'Model' and have been published.
             '''
             # get the analytic
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+            _, col = analytics_collection()
             try:
                 analytic = col.find({'analytic_id': model_id})[0]
             except IndexError:
@@ -560,8 +551,7 @@ class Analytics(Resource):
             Deletes specified analytic.
             This will permanently remove this analytic from the system. USE CAREFULLY!
             '''
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+            _, col = analytics_collection()
             try:
                 analytic = col.find({'analytic_id': analytic_id})[0]
 
@@ -580,8 +570,7 @@ class Analytics(Resource):
             '''
             Returns the details of the specified analytic.
             '''
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+            _, col = analytics_collection()
             try:
                 analytic = col.find({'analytic_id': analytic_id})[0]
             except IndexError:
@@ -608,8 +597,7 @@ class Analytics(Resource):
 
             '''
             #get the analytic
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+            _, col = analytics_collection()
             isResultSource = False
 
             #get the input data
@@ -664,7 +652,7 @@ class Analytics(Resource):
 
             if outputs != None:
                 #store metadata
-                res_col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
+                _, res_col = results_collection()
                 try:
                     src = res_col.find({'src_id': mat_id})[0]
                 except IndexError:
@@ -715,8 +703,7 @@ class Analytics(Resource):
             This request is only applicable to analytics that are of type 'Classificaiton'.
             '''
             #get the analytic
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
+            _, col = analytics_collection()
             try:
                 analytic = col.find({'analytic_id': analytic_id})[0]
             except IndexError:
@@ -744,8 +731,7 @@ class Results(Resource):
         '''
         Returns a list of available results.
         '''
-        client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
+        _, col = results_collection()
         cur = col.find()
         results = []
         for src in cur:
@@ -763,8 +749,7 @@ class Results(Resource):
         '''
         Deletes all stored results.
         '''
-        client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-        col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
+        _, col = results_collection()
         #remove the entries in mongo
         col.remove({})
         #remove the actual files
@@ -781,8 +766,7 @@ class Results(Resource):
             '''
             Returns a list of explorable results.
             '''
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
+            _, col = results_collection()
             cur = col.find()
             explorable = []
             for src in cur:
@@ -807,8 +791,7 @@ class Results(Resource):
             Returns the specific file indicated by the user.
             '''
 
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
+            _, col = results_collection()
             try:
                 res = col.find({'src_id': src_id})[0]['results']
             except IndexError:
@@ -839,8 +822,7 @@ class Results(Resource):
             This will permanently remove this result tree from the system. USE CAREFULLY!
 
             '''
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
+            _, col = results_collection()
             try:
                 res = col.find({'src_id': src_id})[0]['results']
 
@@ -857,8 +839,7 @@ class Results(Resource):
             '''
             Returns the specified result tree.
             '''
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
+            _, col = results_collection()
             try:
                 res = col.find({'src_id': src_id})[0]
 
@@ -867,10 +848,7 @@ class Results(Resource):
                 # return ('No resource at that URL.', 404)
 
             else:
-                response = {
-                    key: value
-                    for key, value in res.items() if key != '_id'
-                }
+                response = drop_id_key(res)
             return response
 
     @ns_r.route('/<src_id>/<res_id>/')
@@ -887,8 +865,7 @@ class Results(Resource):
             Deletes specified result.
             This will permanently remove this result from the system. USE CAREFULLY!
             '''
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
+            _, col = results_collection()
             try:
                 res = col.find({'src_id': src_id})[0]['results']
 
@@ -921,8 +898,7 @@ class Results(Resource):
             '''
             Returns the specified result.
             '''
-            client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
-            col = client[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
+            _, col = results_collection()
             try:
                 res = col.find({'src_id': src_id})[0]['results']
 
@@ -933,11 +909,7 @@ class Results(Resource):
             else:
                 for result in res:
                     if result['id'] == res_id:
-                        response = {
-                            key: value
-                            for key, value in result.items() if key != '_id'
-                        }
-
+                        response = drop_id_key(result)
                         return {'result': response}
 
             return 'No resource at that URL.', 404

@@ -456,6 +456,19 @@ def test_matrix():
     assert len(output) > 0
 
 
+def test_analytics():
+    bedrockapi = BedrockAPI(SERVER, VERSION)
+    optdata = [{'outputs': 'matrix.csv'}]
+    resp = bedrockapi.post('analytics', 'analytics/options', json=optdata)
+    assert resp.status_code == 400
+
+    optdata = [{'outputs': ['matrix.csv']}]
+    resp = bedrockapi.post('analytics', 'analytics/options', json=optdata)
+    print(resp.text)
+    assert resp.status_code == 200
+    opts = resp.json()
+    assert len(opts) > 0
+
 def test_deletions():
     bedrockapi = BedrockAPI(SERVER, VERSION)
     available_sources = bedrockapi.list("dataloader", "sources/").json()

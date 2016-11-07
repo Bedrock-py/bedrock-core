@@ -8,6 +8,7 @@ import werkzeug
 
 DIRMASK = 0o775
 
+
 def write_source_file(dataloader_path, src_id, uploadedfile):
     """Writes the a dataloader source into a file from web request file upload."""
     rootpath = os.path.join(dataloader_path, src_id, 'source/')
@@ -17,6 +18,7 @@ def write_source_file(dataloader_path, src_id, uploadedfile):
     filepath = os.path.join(rootpath, filename)
     uploadedfile.save(filepath)
     return rootpath, filepath
+
 
 def write_source_config(dataloader_path, src_id, conn_info):
     """Writes the configuration data for a dataloader source into a file"""

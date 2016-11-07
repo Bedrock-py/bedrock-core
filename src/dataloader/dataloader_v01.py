@@ -41,7 +41,7 @@ import utils
 from CONSTANTS import DATALOADER_COL_NAME, DATALOADER_DB_NAME, DATALOADER_PATH
 from CONSTANTS import INGEST_COL_NAME, RESULTS_PATH, RESULTS_COL_NAME  #, RESPATH
 from CONSTANTS import FILTERS_COL_NAME
-from core.db import db_connect
+from core.db import db_connect, drop_id_key, find_matrix
 from core.io import write_source_file, write_source_config
 # from django.utils.encoding import smart_str, smart_unicode
 
@@ -61,19 +61,6 @@ def explore(cur):
             exp['mat_type'] = matrix['mat_type']
             yield exp
 
-def drop_id_key(record):
-    """returns a copy of record without the key _id """
-    return {key: value for key, value in record.items() if key != '_id'}
-
-def find_matrix(col, src_id, mat_id):
-    # matrix = col.find({'src_id':src_id, 'matrices.id':mtxid })
-    matrices = col.find({'src_id':src_id})[0]['matrices']
-    matrix_manual = None
-    for matrix in matrices:
-        if matrix['id'] == mat_id:
-            matrix_manual = matrix
-    # assert matrix == matrix_manual
-    return matrix_manual
 
 def find_source(col, src_id):
     """fing a source from pymongo collection"""
