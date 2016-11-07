@@ -39,6 +39,10 @@ docker build -t bedrock .
 ID=$(docker run -p 81:81 -p 82:82 -d  bedrock)
 docker exec $ID sh -c 'cd /var/www/bedrock && ./bin/setup.py'
 ```
+ 
+You can get started on this by installing docker on your machine and then
+running the script `test/test_docker.sh` which will created docker containers
+and run the tests.
 
 ### Running without docker
 If you would like to run this without docker, see the Dockerfile for the
