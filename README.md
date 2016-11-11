@@ -14,7 +14,7 @@ This unpublished material is the property of the Georgia Tech Research Institute
 
 For development of bedrock-core one can use a conda environment named bedrock
 which is described in the `environment.yml` file in the root of the project
-directory. To load the environment use `conda env create evironment.yml`. then
+directory. To load the environment use `conda env create environment.yml`. then
 `source activate bedrock` this will install all the dependencies into a virtual
 environment managed by conda. We use conda instead of virtualenv because of the
 dependencies on the pydata stack which is easier to use with anaconda. if you
