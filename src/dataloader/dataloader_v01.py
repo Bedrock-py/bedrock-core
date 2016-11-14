@@ -43,6 +43,7 @@ from CONSTANTS import INGEST_COL_NAME, RESULTS_PATH, RESULTS_COL_NAME  #, RESPAT
 from CONSTANTS import FILTERS_COL_NAME
 from core.db import db_connect, drop_id_key, find_matrix
 from core.io import write_source_file, write_source_config
+from core.models import Source, SourceCreated
 # from django.utils.encoding import smart_str, smart_unicode
 
 def explore(cur):
@@ -319,30 +320,11 @@ class Sources(Resource):
 
                 rootpath = DATALOADER_PATH  + src_id + '/'
 
-                source = {}
-                source['name'] = name
-                source['host'] = [ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")][-1]
-                source['rootdir'] = rootpath
-                source['src_id'] = src_id
-                source['src_type'] = src_type
-                source['created'] = t
-                source['matrices'] = []
-                source['ingest_id'] = ingest_id
-                source['status'] = None
-                source['count'] = 0
-                source['stash'] = []
-                source['group_name'] = group_name
+                source = Source(name, rootpath, src_id, src_type, t, ingest_id, group_name)
 
-                col.insert(source)
+                col.insert(source.dict())
 
-                response = {}
-                response['name'] = name
-                response['host'] = [ip for ip in socket.gethostbyname_ex(socket.gethostname())[2] if not ip.startswith("127.")][-1]
-                response['rootdir'] = rootpath
-                response['src_id'] = src_id
-                response['src_type'] = src_type
-                response['created'] = t
-                response['matrices_count'] = len(source['matrices'])
+                response = SourceCreated(source).dict()
             except:
                 tb = traceback.format_exc()
                 return tb, 406
