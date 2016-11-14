@@ -14,5 +14,5 @@ safe_clone () {
     return $?
 }
 
-safe_clone $1
+safe_clone $1 $2
 exit $?

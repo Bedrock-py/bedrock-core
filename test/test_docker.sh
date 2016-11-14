@@ -50,6 +50,7 @@ pytest
 cleanup (){
     docker rm -f $ID
 }
+cleanup
 
 # BEGIN CLEANUP PHASE
 # optional cleanup routine

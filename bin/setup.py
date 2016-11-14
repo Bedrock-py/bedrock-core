@@ -34,9 +34,11 @@ if __name__ == "__main__":
         sys.exit(1)
 
     subprocess.check_call('opal reset', shell=True)
-    pkgs = ['opal-analytics-dimensionreduction',
+    pkgs = ['opal-dataloader-ingest-spreadsheet',
+            'opal-dataloader-ingest-omop',
+            'opal-dataloader-ingest-sql',
+            'opal-analytics-dimensionreduction',
             'opal-analytics-clustering',
-            'opal-dataloader-ingest-spreadsheet',
             'opal-dataloader-filter-truth',
             'opal-visualization-scatterplot']
     for package in pkgs:

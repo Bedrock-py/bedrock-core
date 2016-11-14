@@ -26,6 +26,8 @@ echo "INFO: can import bedrock src"
 if [ ! -r opals.tar.gz ]; then
     echo "INFO: Downloading opals"
     pushd /var/www && curl --silent http://130.207.211.77/packages/opals.tar.gz | tar xz
+    echo "INFO: downloaded opals into /var/www/opal-sources"
+    ls /var/www/opal-sources
     popd
 else
     echo "INFO: opals already downloaded make sure they are installed too."

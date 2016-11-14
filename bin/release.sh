@@ -6,19 +6,21 @@ if [ "$1" == "-h" ]; then
 fi
 
 MASTERCONF="./master_conf.json"
-OPALDIR="opals-sources"
+OPALDIR="opal-sources"
 TARBALL="opals.tar.gz"
 CLONE="clone"
 
-MASTERCONF=${1:-MASTERCONF}
+MASTERCONF=${1:-$MASTERCONF}
 OPALDIR=${2:-"opals-sources"}
 TARBALL=${3:-"opals.tar.gz"}
 CLONE=${4:-"clone"}
 mkdir -p "$OPALDIR"
+echo "$MASTERCONF $OPALDIR $TARBALL"
 if [ $? -ne 0 ]; then
     echo "FATA: could not make OPALDIR $OPALDIR"
 fi
 
+echo "INFO: parsing repos"
 if [ ! -z $CLONE ]; then
     repos=$(jq -r 'to_entries
                   | .[]
@@ -30,7 +32,7 @@ else
                   | ["https://" +.value.host + "/" + .value.repo +".zip", .key ]
                   | @sh ' < "$MASTERCONF")
 fi
-# echo ${repos[@]}
+echo ${repos[@]}
 # for r in $repos; do
 #     echo $r
 #     echo "blank"
@@ -48,4 +50,7 @@ echo "INFO: finished cloning"
 cd "$DIR"
 echo "INFO making release tarbal; $TARBALL"
 tar zcf $TARBALL $OPALDIR
-# | xargs -n1 -I% echo % 
+
+if [ $5 == "push" ]; then
+    scp $TARBALL bisi1:$TARBALL
+fi

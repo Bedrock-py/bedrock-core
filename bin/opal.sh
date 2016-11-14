@@ -114,10 +114,10 @@ function ensure_installed (){
 	linfo "checking for $PROG will install $PACKAGE"
 	installed=$(if_installed "$PROG")
 	if [ $? -eq 1 ]; then
-		apt-get install "$PACKAGE"
-		return $?
+		  apt-get install -qq -y "$PACKAGE"
+		  return $?
 	else
-		lwarn "$PROG is already installed: $installed"
+		  lwarn "$PROG is already installed: $installed"
 	fi
 	return 0
 }
@@ -129,7 +129,7 @@ dpkg_install () {
         dpkg-query -l "$f" >$LOGFILE
         if [[ "$?" = 1 ]]; then
             linfo "INSTALL: apt-get install $f"
-            apt-get install "$f"
+            apt-get install -qq -y "$f"
         fi
     fi
 }
@@ -305,6 +305,8 @@ get_opal_info () {
     #if not, ping the server for metadata and pull down the repo
     if [ ! -d "$LOPALDIR" ]; then
         linfo "OPAL_SETUP: $LOPALDIR is not a directory cloning it."
+        echo "$LOPALDIR"
+        ls "$LOPALDIR"
         exit $ERR_DEBUG
         # get a JSON array containing the currently available OPALs
         OPALS=$(curl --silent $OPALSERVER/opals/) #sets OPALS to the contents of master_config.json
@@ -337,6 +339,7 @@ get_opal_info () {
 
     SYSTEM=$(echo "$CONFIG" | jq --raw-output '.["'$OPAL'"]'.system_dependencies)
     TARGET="/var/www/bedrock/src/$API/opals/"
+    PIP_PKGS=$(echo "$CONFIG" | jq --raw-output '.["'$OPAL'"]'.python_dependencies)
 }
 
 br_remove () {
@@ -520,7 +523,7 @@ if [ -z "$BEDROCK_DIR" ]; then
 fi
 
 if [ -z "$OPALDIR" ]; then
-    OPALDIR=$BEDROCK_DIR/../opals-sources/
+    OPALDIR=$BEDROCK_DIR/../opal-sources/
 fi
 
 linfo "BEDROCK_DIR: $BEDROCK_DIR"
@@ -571,6 +574,7 @@ br_install () {
     linfo "INSTALL $OPAL..."
 
     #check python dependencies
+    pip install $PIP_PKGS
 
     #check system dependencies
     if [ -z "$SYSTEM" ]; then

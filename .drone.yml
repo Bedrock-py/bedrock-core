@@ -5,6 +5,8 @@ pipeline:
     # image: python:${PYTHON_VERSION}
     image: jpfa/weblytics
     commands:
+      - apt-get update
+      - apt-get install -qq -y libmysqlclient-dev
       - bash bin/cibuild.sh
 # services:
 #   mongo:
