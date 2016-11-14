@@ -44,7 +44,7 @@ class Source(Storable):
 
 class SourceCreated(Storable):
     """A class that gets sent back on creation of a Source on the bedrock server"""
-    def __init__(self, source: Source):
+    def __init__(self, source):
         self.name = source.name
         self.host = source.host
         self.rootdir = source.rootdir

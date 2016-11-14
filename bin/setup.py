@@ -42,7 +42,11 @@ if __name__ == "__main__":
             'opal-dataloader-filter-truth',
             'opal-visualization-scatterplot']
     for package in pkgs:
-        subprocess.check_call('opal install %s'% package, shell=True)
+        try:
+            subprocess.check_call('opal install %s'% package, shell=True)
+        except subprocess.CalledProcessError as e:
+            print(e)
+            sys.exit(1)
     # we just stop the apache2 server with apache2ctrl because we started it
     # in the Dockerfile with apache2ctrl start -D FOREGROUND
     # TODO if you set up process management correctly, change this line.
