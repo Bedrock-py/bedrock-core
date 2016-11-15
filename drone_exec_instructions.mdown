@@ -1,0 +1,76 @@
+#To run drone exec
+
+Taking instructions from [this site](http://readme.drone.io/0.5/reference/cli/overview/#install-on-linux:68f80267fa3a50980dbb745a782b8dca), run...
+
+```
+curl http://downloads.drone.io/release/linux/amd64/drone.tar.gz | tar zx
+sudo install -t /usr/local/bin drone
+```
+
+cd to bedrock-core repo and do a fresh pull (`git pull origin get`) from the dev branch HEAD or force pull (`git fetch --all && git reset --hard origin/dev`) or clone from dev (`git clone -b dev https://github.gatech.edu/Bedrock/bedrock-core.git`). git status should return:
+
+> Your branch is up-to-date with 'origin/dev'.
+> nothing to commit, working tree clean
+
+
+Now run …
+
+
+```
+drone exec
+```
+
+If that fails....
+	 	 	
+## [Fix Docker's networking DNS config](https://robinwinslow.uk/2016/06/23/fix-docker-networking-dns/)
+
+```
+sudo su root #Enters the root user root directory
+docker run busybox nslookup google.com #may produce an error, if so….
+nmcli dev show | grep 'IP4.DNS'
+```
+
+> Will output something similar to this: 
+> IP4.DNS[1]:                             10.41.31.105
+> IP4.DNS[2]:                             130.207.199.54
+> IP4.DNS[3]:                             10.11.90.10
+> IP4.DNS[4]:                             130.207.199.150
+> IP4.DNS[5]:                             192.168.1.254
+
+```
+cat /etc/docker/daemon.json #shows file contents, if file doesn’t exist, create a new file
+gedit /etc/docker/daemon.json #edit contents of file
+```
+> FILE CONTENTS SHOULD LOOK LIKE THIS (last two entries already existed and moved to the back...listed in order of priority....make sure you’re not using start and ending quotes as those non-ASCII characters won’t be recognized):
+> { "dns": ["10.41.31.105", "130.207.199.54", "10.11.90.10", "130.207.199.150", "192.168.1.254", "127.0.1.1", "8.8.8.8"] }
+
+```
+service docker restart
+docker run busybox nslookup google.com
+```
+
+> Should output something like this:
+> Server:    10.41.31.105
+> Address 1: 10.41.31.105 icldc01.icl.gtri.org
+> 
+> Name:      google.com
+> Address 1: 2607:f8b0:4002:c07::8b yk-in-x8b.1e100.net
+> Address 2: 74.125.196.101 yk-in-f101.1e100.net
+> Address 3: 74.125.196.139 yk-in-f139.1e100.net
+> Address 4: 74.125.196.113 yk-in-f113.1e100.net
+> Address 5: 74.125.196.138 yk-in-f138.1e100.net
+> Address 6: 74.125.196.100 yk-in-f100.1e100.net
+> Address 7: 74.125.196.102 yk-in-f102.1e100.net
+
+```
+ping google.com #should work now
+exit
+```
+
+Now cd to bedrock-core directory, make sure you’re checked out on the latest dev branch, make sure git status returns nothing to commit/ up-to-date with origin/dev, and now, run:
+
+```
+drone exec
+```
+
+It should end with exit code 0.
