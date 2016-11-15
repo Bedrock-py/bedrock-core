@@ -30,18 +30,18 @@ docker run busybox nslookup google.com #may produce an error, if so….
 nmcli dev show | grep 'IP4.DNS'
 ```
 
-> Will output something similar to this: 
-> IP4.DNS[1]:                             10.41.31.105
-> IP4.DNS[2]:                             130.207.199.54
-> IP4.DNS[3]:                             10.11.90.10
-> IP4.DNS[4]:                             130.207.199.150
+> Will output something similar to this: <br/>
+> IP4.DNS[1]:                             10.41.31.105<br/>
+> IP4.DNS[2]:                             130.207.199.54<br/>
+> IP4.DNS[3]:                             10.11.90.10<br/>
+> IP4.DNS[4]:                             130.207.199.150<br/>
 > IP4.DNS[5]:                             192.168.1.254
 
 ```
 cat /etc/docker/daemon.json #shows file contents, if file doesn’t exist, create a new file
 gedit /etc/docker/daemon.json #edit contents of file
 ```
-> FILE CONTENTS SHOULD LOOK LIKE THIS (last two entries already existed and moved to the back...listed in order of priority....make sure you’re not using start and ending quotes as those non-ASCII characters won’t be recognized):
+> FILE CONTENTS SHOULD LOOK LIKE THIS (last two entries already existed and moved to the back...listed in order of priority....make sure you’re not using start and ending quotes as those non-ASCII characters won’t be recognized):<br/>
 > { "dns": ["10.41.31.105", "130.207.199.54", "10.11.90.10", "130.207.199.150", "192.168.1.254", "127.0.1.1", "8.8.8.8"] }
 
 ```
@@ -49,18 +49,18 @@ service docker restart
 docker run busybox nslookup google.com
 ```
 
-> Should output something like this:
-> Server:    10.41.31.105
-> Address 1: 10.41.31.105 icldc01.icl.gtri.org
+> Should output something like this:<br/>
+> Server:    10.41.31.105<br/>
+> Address 1: 10.41.31.105 icldc01.icl.gtri.org<br/>
 > 
-> Name:      google.com
-> Address 1: 2607:f8b0:4002:c07::8b yk-in-x8b.1e100.net
-> Address 2: 74.125.196.101 yk-in-f101.1e100.net
-> Address 3: 74.125.196.139 yk-in-f139.1e100.net
-> Address 4: 74.125.196.113 yk-in-f113.1e100.net
-> Address 5: 74.125.196.138 yk-in-f138.1e100.net
-> Address 6: 74.125.196.100 yk-in-f100.1e100.net
-> Address 7: 74.125.196.102 yk-in-f102.1e100.net
+> Name:      google.com<br/>
+> Address 1: 2607:f8b0:4002:c07::8b yk-in-x8b.1e100.net<br/>
+> Address 2: 74.125.196.101 yk-in-f101.1e100.net<br/>
+> Address 3: 74.125.196.139 yk-in-f139.1e100.net<br/>
+> Address 4: 74.125.196.113 yk-in-f113.1e100.net<br/>
+> Address 5: 74.125.196.138 yk-in-f138.1e100.net<br/>
+> Address 6: 74.125.196.100 yk-in-f100.1e100.net<br/>
+> Address 7: 74.125.196.102 yk-in-f102.1e100.net<br/>
 
 ```
 ping google.com #should work now
