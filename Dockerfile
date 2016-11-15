@@ -24,6 +24,7 @@ RUN apt-get install -qq -y \
                 jq                          \
                 libapache2-mod-wsgi         \
                 libevent-dev                \
+                libmysqlclient-dev          \
                 mongodb-server              \
                 oracle-java8-installer      \
                 oracle-java8-set-default    \

@@ -30,7 +30,7 @@ const_link workflows
 const_link analytics
 const_link visualization
 
-OPALPATH=/var/www/opals-sources
+OPALPATH=/var/www/opal-sources
 
 # echo "INFO: linking opals"
 # ln -s "$OPALPATH" "$TARGET"
