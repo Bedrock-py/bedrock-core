@@ -6,7 +6,7 @@ pipeline:
     image: jpfa/weblytics
     commands:
       - apt-get update
-      - apt-get install -qq -y libmysqlclient-dev
+      - apt-get install -qq -y libmysqlclient-dev unixodbc-dev
       - bash bin/cibuild.sh
 # services:
 #   mongo:
