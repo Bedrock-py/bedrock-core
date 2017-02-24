@@ -19,8 +19,7 @@
 #FILENAME MUST MATCH CLASSNAME
 
 #must include these relative imports
-from ..filter_utils import Filter 
-from ..utils import *
+from bedrock.dataloader.utils import Filter
 
 #must return the same nme as the class listed below
 def get_classname():
@@ -80,14 +79,14 @@ class TweetDocument(Filter):
 
 
     #EXAMPLE OF ADD FILTER
-    
+
     def apply(self, conf):
         ...
         return ??
 
 
     #EXAMPLE OF CONVERT FILTER
-    
+
     def apply(self, conf):
         ...
         return ??
@@ -128,7 +127,3 @@ matrix = {
         #unique id for the source from which this matrix was generated
         "src_id": "caa1a3105a22477f8f9b4a3124cd41b6"
 }
-
-
-
-

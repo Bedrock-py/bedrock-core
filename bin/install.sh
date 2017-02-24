@@ -1,69 +1,46 @@
 #!/bin/bash
-set -e
-DIR=`pwd`
-TARGET=/var/www/bedrock
-mkdir -p "$TARGET"
-export PATH="$(pwd)/bin/:$PATH"
-
-if ! [ -d $DIR ]; then
-    echo "FATA: cannot find DIR:$DIR" >&2
-    exit 1
-fi
-echo "Bedrock code found in $DIR"
-echo "Bedrock code installing to $TARGET"
-# ln -s "$DIR/src/src" "$TARGET"
-# ls "$TARGET"
-echo "Bedrock installed in $TARGET..."
-
-const_link () {
-    API=$1
-    TPATH="$TARGET/src/$API/CONSTANTS.py"
-    DSTPATH="$TARGET/src/CONSTANTS.py"
-    if ! [ -r "$TPATH" ]; then
-        # ln -s "$DSTPATH" "$TPATH"
-        return $?
-    fi
-}
-
-const_link dataloader
-const_link workflows
-const_link analytics
-const_link visualization
-
-OPALPATH=/var/www/opal-sources
-
-# echo "INFO: linking opals"
-# ln -s "$OPALPATH" "$TARGET"
-
-if [ ! -d $OPALPATH ]; then
-    mkdir -p $OPALPATH
-fi
-
-
-OPAL_TAR="/var/www/opals.tar.gz"
-if [ -r $OPAL_TAR ]; then
-    echo "Extracting $OPAL_TAR into $(pwd)"
-    tar xzf $OPAL_TAR
-else
-    echo "WARN: Cannot find $OPAL_TAR, opals may not be available."
-fi
 
 echo "INFO: setting up apache for bedrock"
-ln -s "$TARGET/conf/bedrock.conf" /etc/apache2/sites-available/
+ln -s "/opt/bedrock/conf/bedrock.conf" /etc/apache2/sites-available/
 # ls $TARGET
-a2ensite bedrock.conf
+a2ensite bedrock
 # sudo service apache2 reload
 
-echo "INFO: making links for bedrock"
-OPALBIN=/usr/local/bin/opal
-ln -s /var/www/bedrock/bin/opal.sh "$OPALBIN"
-if [ ! -r "$OPALBIN" ]; then
-    echo "WARN: failed to install opal.sh to $OPALBIN"
-fi
+# Make directories for data (TODO: Shift this and the constants to be a HDFS store)
+mkdir -p /opt/bedrock/dataloader/data
+mkdir -p /opt/bedrock/analytics/data
 
-mkdir -p /var/www/bedrock/src/{analytics,dataloader,visualization}/opals
-mkdir -p /var/www/bedrock/src/{analytics,dataloader,visualization}/data
-chown www-data /var/www/bedrock/src/{analytics,dataloader,visualization}/opals
-chown www-data /var/www/bedrock/src/{analytics,dataloader,visualization}/data
-touch /var/www/bedrock/src/{analytics,dataloader,visualization}/opals/__init__.py
+chown -R www-data:www-data /opt/bedrock/package/src
+chown -R www-data:www-data /opt/bedrock/dataloader/data
+chown -R www-data:www-data /opt/bedrock/analytics/data
 
+#pip install git+ssh://git@github.gatech.edu/Bedrock/bedrock-core@pip#egg=bedrock
+
+# Sleep is necessary to ensure the mongod init.d file is not busy when attempting to access
+chmod 755 /etc/init.d/mongod
+sleep 1
+service mongod start
+
+# pip install git+ssh://git@github.gatech.edu/Bedrock/bedrock-core@pip#egg=bedrock
+pip install -e /opt/bedrock/package
+pip install git+ssh://git@github.gatech.edu/Bedrock/opal-dataloader-ingest-spreadsheet@pip#egg=opals-spreadsheet
+pip install git+ssh://git@github.gatech.edu/Bedrock/opal-analytics-clustering@pip#egg=opals-clustering
+pip install git+ssh://git@github.gatech.edu/Bedrock/opal-analytics-classification@master#egg=opals-classification
+pip install git+ssh://git@github.gatech.edu/Bedrock/opal-analytics-dimensionreduction@master#egg=opals-dimred
+pip install git+ssh://git@github.gatech.edu/Bedrock/opal-dataloader-filter-truth@master#egg=opals-truth
+pip install git+ssh://git@github.gatech.edu/Bedrock/opal-visualization-roc@master#egg=opals-roc
+pip install git+ssh://git@github.gatech.edu/Bedrock/opal-visualization-linechart@master#egg=opals-linechart
+pip install git+ssh://git@github.gatech.edu/Bedrock/opal-visualization-scatterplot@master#egg=opals-scatterplot
+
+# pip install git+ssh://git@github.gatech.edu/Bedrock/opal-visualization-barchart@master#egg=opals-barchart
+
+pip install -e git+ssh://git@github.gatech.edu/Bedrock/opal-analytics-logit2@master#egg=opals-logit2
+# pip install -e /opt/bedrock/package/opal-analytics-logit2
+
+echo 'local({
+  r <- getOption("repos")
+  r["CRAN"] <- "http://cran.cnr.berkeley.edu/"
+  options(repos = r)
+})' >> /etc/R/Rprofile.site
+chmod -R 777 /usr/local/lib/R/site-library
+R -e 'install.packages(c("multiwayvcov","lmtest"))'

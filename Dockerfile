@@ -2,8 +2,13 @@ FROM ubuntu:16.04
 
 MAINTAINER "James Fairbanks" <james.fairbanks@gtri.gatech.edu>
 
+# Import MongoDB public GPG key AND create a MongoDB list file
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 0C49F3730359A14518585931BC711F9BA15703C6
+RUN echo "deb http://repo.mongodb.org/apt/ubuntu $(cat /etc/lsb-release | grep DISTRIB_CODENAME | cut -d= -f2)/mongodb-org/3.4 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-3.4.list
+
 #Install oracle java prerequisites
 RUN apt-get update -y                                                               \
+    && apt-get dist-upgrade -y                                                      \
     && apt-get install -y software-properties-common python-software-properties     \
     && add-apt-repository ppa:webupd8team/java
 
@@ -11,6 +16,9 @@ RUN apt-get update -y                                                           
 RUN apt-get update -qq && apt-get upgrade -qq -y                                    \
     && echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true  \
             | /usr/bin/debconf-set-selections
+
+RUN apt-get update
+
 
 # Install what we can from with APT
 RUN apt-get install -qq -y \
@@ -25,12 +33,16 @@ RUN apt-get install -qq -y \
                 libapache2-mod-wsgi         \
                 libevent-dev                \
                 libmysqlclient-dev          \
-                mongodb-server              \
+                littler                     \
+                mongodb-org-server          \
+                mongodb-org-mongos          \
+                mongodb-org-shell           \
                 oracle-java8-installer      \
                 oracle-java8-set-default    \
                 python-dev                  \
                 python-numpy                \
                 python-scipy                \
+                python-sklearn              \
                 python-virtualenv           \
                 ssh                         \
                 unzip                       \
@@ -59,16 +71,6 @@ COPY ./requirements.txt /var/www/bedrock-requirements.txt
 
 RUN pip install -U pip && hash -r && pip install -r /var/www/bedrock-requirements.txt
 
-RUN cd /var/www && curl --silent http://130.207.211.77/packages/opals.tar.gz | tar xz
-# ADD http://127.0.0.1:8000/opals.tar.gz /root/bedrock/opals-sources
-
-# RUN mv /opals-sources /root/bedrock/opals-sources
-
-# TODO We should run the opal_setup.sh script or ./setup.py
-# in the Dockerfile, but it needs a running mongo instance to work.
-# thus we run this with docker exec sh -c "cd /var/www/bedrock && ./setup.py"
-# RUN cd /var/www/bedrock && ./bin/setup.py
-
 # standard apache
 EXPOSE 80
 # bedrock
@@ -87,9 +89,19 @@ EXPOSE 28017
 # we should either decompose this service or use http://phusion.github.io/baseimage-docker/#solution
 # as the base image, in order run multiple processes in a single container.
 RUN mkdir -p /data/db
-ADD ./ /var/www/bedrock
-RUN cd /var/www/bedrock/ && /var/www/bedrock/bin/install.sh
+RUN mkdir -p /opt/bedrock/conf
+RUN mkdir -p /opt/bedrock/bin
+RUN mkdir -p /opt/bedrock/package
+RUN mkdir -p /root/.ssh
 
-CMD  service mongodb start  &&  /usr/sbin/apache2ctl -D FOREGROUND; /usr/sbin/apache2ctl -D FOREGROUND
+ADD ./conf/bedrock.conf     /opt/bedrock/conf/bedrock.conf
+ADD ./bin/                  /opt/bedrock/bin
+ADD .                       /opt/bedrock/package
+ADD ./conf/ssh              /root/.ssh/
+ADD ./conf/mongod.init.d    /etc/init.d/mongod
+
+RUN /opt/bedrock/bin/install.sh
 
 # to test this you can run ./test_docker.sh which will build, run, and test the container.
+
+CMD service mongod start && /usr/sbin/apache2ctl -D FOREGROUND; /usr/sbin/apache2ctl -D FOREGROUND

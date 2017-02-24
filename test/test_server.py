@@ -11,14 +11,13 @@ import requests
 import numpy as np
 import pandas as pd
 import pytest
-from src.client.client import BedrockAPI
+from bedrock.client.client import BedrockAPI
 sys.path.insert(0, 'test') #NOTE: run from bedrock-core / main folder
 from testhelp import expects, is_numeric, column_types
 
 VAGRANTSERVER = "http://192.168.33.102:81/"
 SERVER = "http://localhost:81/"
 PRODSERVER = "http://bisi3:9999/"
-VERSION = "0.1"
 
 if __name__ == "__main__":
     print("Running tests as main against server:%s as main" % SERVER)
@@ -30,9 +29,9 @@ if __name__ == "__main__":
     if ARGS.port:
         SERVER = "http://localhost:%d/" % ARGS.port
 
-# def api(category, version, subcategory):
-#     API = "%s/api/%s/%s/"
-#     return API % (category, version, subcategory)
+# def api(category, subcategory):
+#     API = "%s/%s/"
+#     return API % (category, subcategory)
 
 
 def log_failure(api, msg, response, expected_code, *args, **kwargs):
@@ -79,7 +78,7 @@ def check_spreadsheet(api):
     Source code for ingest spreadsheet:
         https://github.gatech.edu/Bedrock/opal-dataloader-ingest-spreadsheet/blob/master/Spreadsheet.py
     '''
-    sresp = api.ingest("Spreadsheet")
+    sresp = api.ingest("opals.spreadsheet.Spreadsheet.Spreadsheet")
     print('Checking: ', sresp.url)
     assert sresp.status_code == 200, "Failed to load Spreadsheet"
     spreadsheet = sresp.json()
@@ -140,9 +139,9 @@ def check_existing_opals(api):
     print_all_available_analytic_opals(api)
 
     #CHECK AVAILABILITY OF OPALS
-    pca = check_analytic_opal_availability(api, 'analytics', 'analytics/dimred', 'Pca')
+    pca = check_analytic_opal_availability(api, 'analytics', 'analytics/dimred', 'opals.dimred.Pca.Pca')
     assert pca is not None
-    kmeans = check_analytic_opal_availability(api, 'analytics', 'analytics/clustering', 'Kmeans')
+    kmeans = check_analytic_opal_availability(api, 'analytics', 'analytics/clustering', 'opals.clustering.Kmeans.Kmeans')
     assert kmeans is not None
 
 def check_put(api, ssname, filename, ingest_id, group_id):
@@ -247,7 +246,7 @@ def check_explore_results(
 
 def check_make_matrix(api, source_id, matbody):
     """check that matrices can be made from a source"""
-    # echo $matbody |  http post http://192.168.33.102:81/dataloader/api/0.1/sources/$src_id/
+    # echo $matbody |  http post http://192.168.33.102:81/dataloader/sources/$src_id/
     # postdata = json.loads(matbody)
     resp = api.post("dataloader", "sources/%s/" % source_id, json=matbody)
     # assert resp.status_code == 201, "Failed to create matrix: %d: %s" % (resp.status_code,
@@ -279,7 +278,7 @@ def check_analysis(api, analytic_id, source_id, postdata):
 
 def test_api_lists():
     ''' checks available api's '''
-    bedrockapi = BedrockAPI(SERVER, VERSION)
+    bedrockapi = BedrockAPI(SERVER)
     check_api_list(bedrockapi, "analytics", "analytics")
     check_api_list(bedrockapi, "analytics", "analytics/clustering")
     check_api_list(bedrockapi, "dataloader", "ingest")
@@ -289,21 +288,21 @@ def test_api_lists():
     assert spreadsheet is not None
     check_api_list(bedrockapi, "visualization", "visualization")
 
-    analytics_api_test = "analytics/api/0.1/analytics/"
+    analytics_api_test = "analytics/analytics/"
     analytics_api = bedrockapi.path("analytics", "analytics")
     assert analytics_api == analytics_api_test, \
            "generating api URLs is broken " + analytics_api + " " + analytics_api_test
 
     print("Available Analytics:")
     ans = bedrockapi.list("analytics", "analytics")
-    pca = check_analytic_opal_availability(bedrockapi, 'analytics', 'analytics/dimred', 'Pca')
+    pca = check_analytic_opal_availability(bedrockapi, 'analytics', 'analytics/dimred', 'opals.dimred.Pca.Pca')
     assert ans is not None
     assert pca is not None
 
 def test_workflow_iris_pca():
     """test that we can upload the IRIS dataset as a csv and run PCA then make a plot."""
     print("Running tests against server:%s" % SERVER)
-    bedrockapi = BedrockAPI(SERVER, VERSION)
+    bedrockapi = BedrockAPI(SERVER)
 
     source_name = 'iris'
     group_id = 'default'
@@ -314,7 +313,7 @@ def test_workflow_iris_pca():
     source_id = ""
 
     if len(available_sources) < 4:
-        created, fetched = check_put(bedrockapi, source_name, "./iris.csv", "Spreadsheet", group_id)
+        created, fetched = check_put(bedrockapi, source_name, "./iris.csv", "opals.spreadsheet.Spreadsheet.Spreadsheet", group_id)
         source_id = created['src_id']
         print("INFO: created source: %s" % source_id)
     else:
@@ -343,9 +342,9 @@ def test_workflow_iris_pca():
             'sepal_length': {},
             'sepal_width': {},
             'species': {
-                'classname': 'TruthLabelsNumeric',
+                'classname': 'opals.truth.TruthLabelsNumeric.TruthLabelsNumeric',
                 'description': 'Extracts the truth labels.',
-                'filter_id': 'TruthLabelsNumeric',
+                'filter_id': 'opals.truth.TruthLabelsNumeric.TruthLabelsNumeric',
                 'input': 'Numeric',
                 'name': 'TruthLabels',
                 'ouptuts': ['truth_labels.csv'],
@@ -369,7 +368,7 @@ def test_workflow_iris_pca():
     print("INFO: received matrix post response")
     pprint(mtx_res)
 
-    analytic_id = "Pca"
+    analytic_id = "opals.dimred.Pca.Pca"
     # to apply the analysis to the matrix
     print("INFO: creating analysis_postdata")
     analysis_postdata = {
@@ -419,7 +418,7 @@ def test_workflow_iris_pca():
         'parameters': plot_params_list
     }
 
-    plotname = "ClusterScatterTruth"
+    plotname = "opals.scatterplot.ClusterScatterTruth.ClusterScatterTruth"
     resp = bedrockapi.post("visualization", "visualization/%s/" % plotname, json=getplot_data)
     log_failure(bedrockapi, "creating visualization %s" % plotname, resp, 200)
     plot = resp.json()
@@ -428,7 +427,7 @@ def test_workflow_iris_pca():
 
 
 def test_matrix():
-    bedrockapi = BedrockAPI(SERVER, VERSION)
+    bedrockapi = BedrockAPI(SERVER)
     exploredresp = bedrockapi.get('dataloader', 'sources/explorable')
     check_api_list(bedrockapi, "dataloader", "sources")
     assert exploredresp.status_code == 200
@@ -436,8 +435,8 @@ def test_matrix():
     print(explored)
     mat = explored[0]
     src_id = mat['src_id']
-    mat_id = mat['id']
-    rootpath = mat['rootdir']
+    mat_id = mat['matrices'][0]['id']
+    rootpath = mat['matrices'][0]['rootdir']
     print('matrix root path: %s %s %s' % (src_id, mat_id, rootpath))
     sourceresp = bedrockapi.get('dataloader', 'sources/' + src_id)
     assert sourceresp.status_code == 200
@@ -457,7 +456,7 @@ def test_matrix():
 
 
 def test_analytics():
-    bedrockapi = BedrockAPI(SERVER, VERSION)
+    bedrockapi = BedrockAPI(SERVER)
     optdata = [{'outputs': 'matrix.csv'}]
     resp = bedrockapi.post('analytics', 'analytics/options', json=optdata)
     assert resp.status_code == 400
@@ -470,30 +469,30 @@ def test_analytics():
     assert len(opts) > 0
 
 def test_deletions():
-    bedrockapi = BedrockAPI(SERVER, VERSION)
+    bedrockapi = BedrockAPI(SERVER)
     available_sources = bedrockapi.list("dataloader", "sources/").json()
     source = available_sources[0]
     source_id = source['src_id']
     fetched = requests.get(bedrockapi.endpoint("dataloader", "sources/%s/" % source_id)).json()
     source_name = 'iris-to-delete'
     group_id = 'default'
-    created, fetched = check_put_deletef(bedrockapi, source_name, "./iris.csv", "Spreadsheet", group_id)
+    created, fetched = check_put_deletef(bedrockapi, source_name, "./iris.csv", "opals.spreadsheet.Spreadsheet.Spreadsheet", group_id)
 
 
 def validate_api_paths(api):
     ''' validates various bedrockapi.path responses '''
     #CHECK BEDROCKAPI.PATH
-    ANALYTICS_API_TEST = "analytics/api/0.1/analytics/"
+    ANALYTICS_API_TEST = "analytics/analytics/"
     ANALYTICS_API = api.path("analytics", "analytics")
     assert ANALYTICS_API == ANALYTICS_API_TEST, \
            "generating api URLs is broken " + ANALYTICS_API + " " + ANALYTICS_API_TEST
 
-    DATALOADER_FILTERS_API_TEST = "dataloader/api/0.1/filters/"
+    DATALOADER_FILTERS_API_TEST = "dataloader/filters/"
     DATALOADER_FILTERS_API = api.path("dataloader", "filters")
     assert DATALOADER_FILTERS_API == DATALOADER_FILTERS_API_TEST, \
            "generating api URLs is broken " + DATALOADER_FILTERS_API + " " + DATALOADER_FILTERS_API_TEST
 
-    VISUALIZATION_API_TEST = "visualization/api/0.1/visualization/"
+    VISUALIZATION_API_TEST = "visualization/visualization/"
     VISUALIZATION_API = api.path("visualization", "visualization")
     assert VISUALIZATION_API == VISUALIZATION_API_TEST, \
            "generating api URLs is broken " + VISUALIZATION_API + " " + VISUALIZATION_API_TEST
@@ -519,7 +518,7 @@ def put_and_or_get_dataset(api,
 
     if filepath_to_put:
         created, fetched = check_put(api, source_name, filepath_to_put,
-                                     "Spreadsheet", group_id)
+                                     "opals.spreadsheet.Spreadsheet.Spreadsheet", group_id)
 
         source_id = created['src_id']
         logging.info("created source: %s", source_id)
@@ -550,9 +549,9 @@ def automate_matrix_def_from_ref_df(
         source_name='',
         ref_df_filepath='',
         truth_labels='',
-        label_filters_dict= {'classname': 'TruthLabelsNumeric',
+        label_filters_dict= {'classname': 'opals.truth.TruthLabelsNumeric.TruthLabelsNumeric',
                              'description': 'Extracts the truth labels.',
-                             'filter_id': 'TruthLabelsNumeric',
+                             'filter_id': 'opals.truth.TruthLabelsNumeric.TruthLabelsNumeric',
                              'input': 'Numeric',
                              'name': 'TruthLabels',
                              'ouptuts': ['truth_labels.csv'],
@@ -682,7 +681,7 @@ def workflow_2(
     print("Running tests against server: %s" % SERVER)
     print('\n')
 
-    api = BedrockAPI(SERVER, VERSION) #src/client/client.py
+    api = BedrockAPI(SERVER) #src/client/client.py
 
     spreadsheet = check_spreadsheet(api)
 
@@ -728,13 +727,13 @@ def workflow_2(
     }
 
     plot_inputs = getplot_data['inputs']
-    if plotname == 'ClusterScatterTruth':
+    if plotname == 'opals.scatterplot.ClusterScatterTruth.ClusterScatterTruth':
         plot_inputs['matrix.csv'] = analysis_res
         plot_inputs['truth_labels.csv'] = mtx_res
-    if plotname == 'ClusterScatter':
+    if plotname == 'opals.scatterplot.ClusterScatter.ClusterScatter':
         plot_inputs['matrix.csv'] = mtx_res
         plot_inputs['assignments.csv'] = analysis_res
-    if plotname == 'Scatter':
+    if plotname == 'opals.scatterplot.Scatter.Scatter':
         plot_inputs['matrix.csv'] = analysis_res
         plot_inputs['features.txt'] = mtx_res
 
@@ -757,9 +756,9 @@ def workflow_2(
 
 # @pytest.mark.skip('still uses precalculated UUIDs')
 def test_put_iris():
-    bedrockapi = BedrockAPI(SERVER, VERSION)
+    bedrockapi = BedrockAPI(SERVER)
     check_put_deletef(bedrockapi, 'iris', "test/test_datasets/iris.csv",
-                      "Spreadsheet", 'default')
+                      "opals.spreadsheet.Spreadsheet.Spreadsheet", 'default')
 
     # check_explore_results(api=bedrockapi,
     #                       source_id='',
@@ -769,9 +768,9 @@ MATBODY = automate_matrix_def_from_ref_df(
     source_name='iris',
     ref_df_filepath="test/test_datasets/iris.csv",
     truth_labels='species',
-    label_filters_dict= {'classname': 'TruthLabelsNumeric',
+    label_filters_dict= {'classname': 'opals.truth.TruthLabelsNumeric.TruthLabelsNumeric',
                 'description': 'Extracts the truth labels.',
-                'filter_id': 'TruthLabelsNumeric',
+                'filter_id': 'opals.truth.TruthLabelsNumeric.TruthLabelsNumeric',
                 'input': 'Numeric',
                 'name': 'TruthLabels',
                 'ouptuts': ['truth_labels.csv'],
@@ -793,7 +792,7 @@ def test_iris_pca_clusterscattertruth():
         group_id='default',
         truth_labels='species',
         matbody=MATBODY,
-        analytic_id="Pca",
+        analytic_id="opals.dimred.Pca.Pca",
         analysis_postdata={
             'inputs': {
                 'features.txt': None,
@@ -823,7 +822,7 @@ def test_iris_pca_clusterscattertruth():
             'type': 'input',
             'value': 1
         }],
-        plotname="ClusterScatterTruth"
+        plotname="opals.scatterplot.ClusterScatterTruth.ClusterScatterTruth"
     )
 
 #RUNS PROPERLY ON "http://bisi3:9999/"
@@ -836,7 +835,7 @@ def test_iris_Lda_clusterscattertruth():
         group_id='default',
         truth_labels='species',
         matbody=MATBODY,
-        analytic_id="Lda",
+        analytic_id="opals.dimred.Lda.Lda",
         analysis_postdata={
             'inputs': {
                 'truth_labels.csv': None,
@@ -866,7 +865,7 @@ def test_iris_Lda_clusterscattertruth():
             'type': 'input',
             'value': 1
         }],
-        plotname="ClusterScatterTruth"
+        plotname="opals.scatterplot.ClusterScatterTruth.ClusterScatterTruth"
     )
 
 #RUNS PROPERLY ON "http://bisi3:9999/"
@@ -879,7 +878,7 @@ def test_iris_Lda_scatter():
         group_id='default',
         truth_labels='species',
         matbody=MATBODY,
-        analytic_id="Lda",
+        analytic_id="opals.dimred.Lda.Lda",
         analysis_postdata={
             'inputs': {
                 'truth_labels.csv': None,
@@ -909,7 +908,7 @@ def test_iris_Lda_scatter():
             'type': 'input',
             'value': 1
         }],
-        plotname="Scatter"
+        plotname="opals.scatterplot.Scatter.Scatter"
     )
 
 #RUNS PROPERLY ON "http://bisi3:9999/"
@@ -922,7 +921,7 @@ def test_iris_kmeans_clusterscatter():
         group_id='default',
         truth_labels='species',
         matbody=MATBODY,
-        analytic_id='Kmeans',
+        analytic_id='opals.clustering.Kmeans.Kmeans',
         analysis_postdata={
             "inputs": {
                 "matrix.csv": None
@@ -953,7 +952,7 @@ def test_iris_kmeans_clusterscatter():
             'type': 'input',
             'value': 1
         }],
-        plotname="ClusterScatter"
+        plotname="opals.scatterplot.ClusterScatter.ClusterScatter"
     )
 
 
@@ -1000,7 +999,7 @@ def test_iris_centroid():
                 "value": 1
             }
         ],
-        plotname="ClusterScatter",
+        plotname="opals.scatterplot.ClusterScatter.ClusterScatter",
     )
 
 def make_bball_matrix():
@@ -1037,7 +1036,7 @@ def test_bball_kmeans():
         source_id_of_dataset_to_get='0960083d8a374aacada4c2f2be59d72f',
         source_name='bball',
         group_id='default',
-        analytic_id='Kmeans',
+        analytic_id='opals.clustering.Kmeans.Kmeans',
         analysis_postdata={
             "inputs": {
                 "matrix.csv": None

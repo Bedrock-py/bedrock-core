@@ -21,15 +21,24 @@ ID=$(docker run -p 81:81 -p 82:82 -d  bedrock)
 # ID=$(docker run -p 81:81 -p 82:82 -d -v $(pwd):/var/www/bedrock bedrock)
 echo "docker container ID:$ID is running"
 # TODO find a better way to wait for mongo to start.
-sleep 5
-docker exec $ID sh -c 'cd /var/www/bedrock && ./bin/setup.py'
+# sleep 5
+# docker exec $ID sh -c 'cd /var/www/bedrock && ./bin/setup.py'
+# if [ $? -ne 0 ]; then
+#     echo "FATAL: setup.py failed run docker rm -f $ID to remove docker instance"
+#     echo "FATAL: setup.py failed run docker exec -it $ID bash to connect to docker instance"
+#     exit 1
+# fi
+
+# END SETUP PHASE
+
+curl -X PUT -F "file=@./iris.csv" http://localhost:81/dataloader/sources/iris/opals.spreadsheet.Spreadsheet.Spreadsheet/group/
+
 if [ $? -ne 0 ]; then
-    echo "FATAL: setup.py failed run docker rm -f $ID to remove docker instance"
-    echo "FATAL: setup.py failed run docker exec -it $ID bash to connect to docker instance"
+    echo "FAILED: Ingesting IRIS csv failed"
     exit 1
 fi
 
-# END SETUP PHASE
+return;
 
 echo "ran setup.py"
 docker ps
@@ -50,7 +59,6 @@ pytest
 cleanup (){
     docker rm -f $ID
 }
-cleanup
 
 # BEGIN CLEANUP PHASE
 # optional cleanup routine

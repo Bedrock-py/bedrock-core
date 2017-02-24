@@ -25,6 +25,8 @@ to reflect the changes in the conda environment.
 
 ### Running in docker
 
+You need to add a private key with access to the Bedrock organization to `/conf/ssh/id_rsa(.pub)`
+
 The file test_docker.sh is a script that uses docker to build a working
 installation of the bedrock server and runs the unit tests. See this script for
 the up to date run commands. The run commands will look something like below.
@@ -39,6 +41,8 @@ docker build -t bedrock .
 ID=$(docker run -p 81:81 -p 82:82 -d  bedrock)
 docker exec $ID sh -c 'cd /var/www/bedrock && ./bin/setup.py'
 ```
+
+If your organization disallows public DNS servers, you can follow the steps in [this guide](https://robinwinslow.uk/2016/06/23/fix-docker-networking-dns/#the-permanent-system-wide-fix) to instruct Docker to use specific DNS servers.
  
 You can get started on this by installing docker on your machine and then
 running the script `test/test_docker.sh` which will created docker containers
