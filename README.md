@@ -15,8 +15,6 @@ to reflect the changes in the conda environment.
 
 ### Running in docker
 
-You need to add a private key with access to the Bedrock organization to `/conf/ssh/id_rsa(.pub)`
-
 The file test_docker.sh is a script that uses docker to build a working
 installation of the bedrock server and runs the unit tests. See this script for
 the up to date run commands. The run commands will look something like below.
@@ -44,7 +42,6 @@ required software on your server and then run the scripts by hand. You should
 need 
 
 - bin/install.sh
-- bin/setup.py
 
 As this procedure will change over time, consult the Dockerfile for steps that
 work.
