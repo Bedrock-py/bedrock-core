@@ -14,28 +14,25 @@ chown -R www-data:www-data /opt/bedrock/package/src
 chown -R www-data:www-data /opt/bedrock/dataloader/data
 chown -R www-data:www-data /opt/bedrock/analytics/data
 
-#pip install git+ssh://git@github.gatech.edu/Bedrock/bedrock-core@pip#egg=bedrock
-
 # Sleep is necessary to ensure the mongod init.d file is not busy when attempting to access
 chmod 755 /etc/init.d/mongod
 sleep 1
 service mongod start
 
-# pip install git+ssh://git@github.gatech.edu/Bedrock/bedrock-core@pip#egg=bedrock
+# pip install git+https://github.com/Bedrock-py/bedrock-core.git@master#egg=bedrock
+
+# Install bedrock core and default opals
 pip install -e /opt/bedrock/package
-pip install git+ssh://git@github.gatech.edu/Bedrock/opal-dataloader-ingest-spreadsheet@pip#egg=opals-spreadsheet
-pip install git+ssh://git@github.gatech.edu/Bedrock/opal-analytics-clustering@pip#egg=opals-clustering
-pip install git+ssh://git@github.gatech.edu/Bedrock/opal-analytics-classification@master#egg=opals-classification
-pip install git+ssh://git@github.gatech.edu/Bedrock/opal-analytics-dimensionreduction@master#egg=opals-dimred
-pip install git+ssh://git@github.gatech.edu/Bedrock/opal-dataloader-filter-truth@master#egg=opals-truth
-pip install git+ssh://git@github.gatech.edu/Bedrock/opal-visualization-roc@master#egg=opals-roc
-pip install git+ssh://git@github.gatech.edu/Bedrock/opal-visualization-linechart@master#egg=opals-linechart
-pip install git+ssh://git@github.gatech.edu/Bedrock/opal-visualization-scatterplot@master#egg=opals-scatterplot
+pip install git+https://github.com/Bedrock-py/opal-analytics-clustering.git@master#egg=opals-clustering
+pip install git+https://github.com/Bedrock-py/opal-analytics-classification.git@master#egg=opals-classification
+pip install git+https://github.com/Bedrock-py/opal-analytics-dimensionreduction.git@master#egg=opals-dimred
 
-# pip install git+ssh://git@github.gatech.edu/Bedrock/opal-visualization-barchart@master#egg=opals-barchart
+pip install git+https://github.com/Bedrock-py/opal-dataloader-ingest-spreadsheet.git@master#egg=opals-spreadsheet
+pip install git+https://github.com/Bedrock-py/opal-dataloader-filter-truth.git@master#egg=opals-truth
 
-pip install -e git+ssh://git@github.gatech.edu/Bedrock/opal-analytics-logit2@master#egg=opals-logit2
-# pip install -e /opt/bedrock/package/opal-analytics-logit2
+pip install git+https://github.com/Bedrock-py/opal-visualization-roc.git@master#egg=opals-roc
+pip install git+https://github.com/Bedrock-py/opal-visualization-linechart.git@master#egg=opals-linechart
+pip install git+https://github.com/Bedrock-py/opal-visualization-scatterplot.git@master#egg=opals-scatterplot
 
 echo 'local({
   r <- getOption("repos")
