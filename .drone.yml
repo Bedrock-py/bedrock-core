@@ -1,0 +1,18 @@
+workspace:
+  path: /var/www/bedrock
+pipeline:
+  build:
+    # image: python:${PYTHON_VERSION}
+    image: jpfa/weblytics
+    commands:
+      - apt-get update
+      - apt-get install -qq -y libmysqlclient-dev unixodbc-dev
+      - bash bin/cibuild.sh
+# services:
+#   mongo:
+#     image: mongo
+
+matrix:
+  PYTHON_VERSION:
+    - 2.7
+    # - 3.5

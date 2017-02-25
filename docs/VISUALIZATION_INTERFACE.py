@@ -20,15 +20,15 @@
 ############################################
 
 #must include these relative imports
-from ..visualization import VisBase
+from bedrock.visualization.utils import Visualization
 
 
 #must return the same nme as the class listed below
 def get_classname():
     return 'Linechart'
-    
+
 #must inherit from VisBase
-class Linechart(VisBase):
+class Linechart(Visualization):
     def __init__(self):
         super(Linechart, self).__init__()
 
@@ -70,4 +70,3 @@ class Linechart(VisBase):
 
 
 #INCLUDE DETAILS ON ANGULAR DEPENDENCIES
-

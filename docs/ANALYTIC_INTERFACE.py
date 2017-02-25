@@ -19,7 +19,7 @@
 #FILENAME MUST MATCH CLASSNAME
 
 #must include these relative imports
-from ..analytics import Algorithm 
+from bedrock.analytics.utils import Algorithm 
 
 #must return the same nme as the class listed below
 def get_classname():

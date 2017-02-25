@@ -1,0 +1,4 @@
+host github.gatech.edu
+ HostName github.gatech.edu
+ IdentityFile ~/.ssh/id_rsa
+ User git

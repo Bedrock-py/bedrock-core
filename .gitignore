@@ -1,7 +1,13 @@
 .DS_Store
+__pycache__
 *.pyc
 analytics/opals/*
 analytics/data/*
 dataloader/opals/*
 dataloader/data/*
 visualization/opals/*
+build
+dist
+*.egg-info
+.cache
+id_rsa*

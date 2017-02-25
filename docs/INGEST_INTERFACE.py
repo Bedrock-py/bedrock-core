@@ -19,15 +19,14 @@
 #FILENAME MUST MATCH CLASSNAME
 
 #must include these relative imports
-from ..ingest_utils import IngestModule 
-from ..utils import *
+from bedrock.dataloader.utils import Ingest
 
 #must return the same nme as the class listed below
 def get_classname():
     return 'Spreadsheet'
 
 #must inherit from IngestModule
-class Spreadsheet(IngestModule):
+class Spreadsheet(Ingest):
 
     def __init__(self):
         super(Spreadsheet, self).__init__()
@@ -56,7 +55,7 @@ class Spreadsheet(IngestModule):
     #src: a dictionary, the fields for which are detailed below
      def ingest(self, posted_data, src):
         ...
-        #must return boolean for error and a list of matrices objects 
+        #must return boolean for error and a list of matrices objects
         #(the fields for which are detailed below)
         return error, matrices
 
@@ -90,7 +89,7 @@ schemas = [
 ############################################
 
 posted_data = {
-    #matrixFilters is a dictionary where each key is a field of data 
+    #matrixFilters is a dictionary where each key is a field of data
     #and the value is the object of specifications provided by the published filter
     "matrixFilters": {
         #example for text data using the TweetDocumentLEAN filter
@@ -188,6 +187,3 @@ matrices = [
         "src_id": "caa1a3105a22477f8f9b4a3124cd41b6"
       }
 ]
-
-
-
