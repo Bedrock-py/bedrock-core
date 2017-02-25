@@ -27,7 +27,6 @@ container which starts the server and then exec into it the opal install script.
 ```sh
 docker build -t bedrock .
 ID=$(docker run -p 81:81 -p 82:82 -d  bedrock)
-docker exec $ID sh -c 'cd /var/www/bedrock && ./bin/setup.py'
 ```
 
 If your organization disallows public DNS servers, you can follow the steps in [this guide](https://robinwinslow.uk/2016/06/23/fix-docker-networking-dns/#the-permanent-system-wide-fix) to instruct Docker to use specific DNS servers.
