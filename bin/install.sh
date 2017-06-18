@@ -41,4 +41,4 @@ echo 'local({
   options(repos = r)
 })' >> /etc/R/Rprofile.site
 chmod -R 777 /usr/local/lib/R/site-library
-R -e 'install.packages(c("multiwayvcov","lmtest","dplyr"))'
+R -e 'Sys.setenv(MAKEFLAGS = "-j4"); install.packages(c("multiwayvcov","lmtest","dplyr","rstan"),dependencies=TRUE)'

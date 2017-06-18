@@ -24,19 +24,26 @@ RUN apt-get update
 RUN apt-get install -qq -y \
                 ant                         \
                 apache2                     \
+                build-essential             \
                 cmake                       \
                 curl                        \
                 cython                      \
+                ed                          \
                 gfortran                    \
                 git                         \
                 jq                          \
                 libapache2-mod-wsgi         \
+                libcurl4-openssl-dev        \
                 libevent-dev                \
                 libmysqlclient-dev          \
+                libpq-dev                   \
+                libssl-dev                  \
+                libxml2-dev                 \
                 littler                     \
                 mongodb-org-server          \
                 mongodb-org-mongos          \
                 mongodb-org-shell           \
+                libnlopt-dev                \
                 oracle-java8-installer      \
                 oracle-java8-set-default    \
                 python-dev                  \
@@ -44,6 +51,7 @@ RUN apt-get install -qq -y \
                 python-scipy                \
                 python-sklearn              \
                 python-virtualenv           \
+                r-cran-lme4                 \
                 ssh                         \
                 unzip                       \
                 wget                        \
