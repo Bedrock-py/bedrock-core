@@ -7,9 +7,9 @@ RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 0C49F3730359A14
 RUN echo "deb http://repo.mongodb.org/apt/ubuntu $(cat /etc/lsb-release | grep DISTRIB_CODENAME | cut -d= -f2)/mongodb-org/3.4 multiverse" | tee /etc/apt/sources.list.d/mongodb-org-3.4.list
 
 #Install oracle java prerequisites
-RUN apt-get update -y                                                               \
-    && apt-get dist-upgrade -y                                                      \
-    && apt-get install -y software-properties-common python-software-properties     \
+RUN apt-get update -y                                                                         \
+    && apt-get dist-upgrade -y                                                                \
+    && apt-get install -y software-properties-common python-software-properties apt-utils     \
     && add-apt-repository ppa:webupd8team/java
 
 # Install oracle java for the LEAN Library not necessarily necessary anymore
@@ -24,19 +24,26 @@ RUN apt-get update
 RUN apt-get install -qq -y \
                 ant                         \
                 apache2                     \
+                build-essential             \
                 cmake                       \
                 curl                        \
                 cython                      \
+                ed                          \
                 gfortran                    \
                 git                         \
                 jq                          \
                 libapache2-mod-wsgi         \
+                libcurl4-openssl-dev        \
                 libevent-dev                \
                 libmysqlclient-dev          \
+                libpq-dev                   \
+                libssl-dev                  \
+                libxml2-dev                 \
                 littler                     \
                 mongodb-org-server          \
                 mongodb-org-mongos          \
                 mongodb-org-shell           \
+                libnlopt-dev                \
                 oracle-java8-installer      \
                 oracle-java8-set-default    \
                 python-dev                  \
@@ -44,6 +51,7 @@ RUN apt-get install -qq -y \
                 python-scipy                \
                 python-sklearn              \
                 python-virtualenv           \
+                r-cran-lme4                 \
                 ssh                         \
                 unzip                       \
                 wget                        \

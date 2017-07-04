@@ -98,7 +98,7 @@ posted_data = {
             "description":"Converts documents into a term-frequency matrix and associated documents.",
             "filter_id":"lean.python.TweetDocumentLEAN",
             "input":"String","name":"Twitter (LEAN)",
-            "ouptuts":["documents.txt","dictionary.txt","matrix.mtx"],
+            "outputs":["documents.txt","dictionary.txt","matrix.mtx"],
             #parameters adjusted by the UI to include user inputs
             "parameters_spec":[ {"attrname":"include","name":"Include the following keywords","type":"input","value":""},
                                 {"attrname":"exclude","name":"Exclude the following keywords","type":"input","value":""},

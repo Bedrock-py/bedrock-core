@@ -26,6 +26,7 @@ pip install -e /opt/bedrock/package
 pip install git+https://github.com/Bedrock-py/opal-analytics-clustering.git@master#egg=opals-clustering
 pip install git+https://github.com/Bedrock-py/opal-analytics-classification.git@master#egg=opals-classification
 pip install git+https://github.com/Bedrock-py/opal-analytics-dimensionreduction.git@master#egg=opals-dimred
+pip install git+https://github.com/Bedrock-py/opal-analytics-select-from-dataframe.git@master#egg=opal-analytics-select-from-dataframe
 
 pip install git+https://github.com/Bedrock-py/opal-dataloader-ingest-spreadsheet.git@master#egg=opals-spreadsheet
 pip install git+https://github.com/Bedrock-py/opal-dataloader-filter-truth.git@master#egg=opals-truth
@@ -40,4 +41,4 @@ echo 'local({
   options(repos = r)
 })' >> /etc/R/Rprofile.site
 chmod -R 777 /usr/local/lib/R/site-library
-R -e 'install.packages(c("multiwayvcov","lmtest"))'
+R -e 'Sys.setenv(MAKEFLAGS = "-j4"); install.packages(c("multiwayvcov","lmtest","dplyr","rstan"),dependencies=TRUE)'

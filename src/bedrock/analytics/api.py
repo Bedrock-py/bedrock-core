@@ -204,7 +204,7 @@ api.model(
     'parameters': fields.List(
         AnalyticParams,
         description='List of input parameters used by the analytic'),
-    'ouptuts': fields.List(
+    'outputs': fields.List(
         fields.String,
         description='List of output files associated with that result',
         required=True),
@@ -222,7 +222,7 @@ class Result(fields.Raw):
             'id': value.id,
             'name': value.name,
             'parameters': value.parameters,
-            'ouptuts': value.outputs,
+            'outputs': value.outputs,
             'rootdir': value.rootdir,
             'src_id': value.src_id
         }
