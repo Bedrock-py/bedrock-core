@@ -2,6 +2,10 @@ bedrock-core
 ============
 ## Getting started
 
+If you want to get started right away with an example use the QuickStart.pptx
+file in the docs/ folder to run an example workflow with a locally installed
+Bedrock server
+
 For development of bedrock-core one can use a conda environment named bedrock
 which is described in the `environment.yml` file in the root of the project
 directory. To load the environment use `conda env create environment.yml`. then
