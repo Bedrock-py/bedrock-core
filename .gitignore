@@ -11,3 +11,4 @@ dist
 *.egg-info
 .cache
 id_rsa*
+.ipynb_checkpoints
