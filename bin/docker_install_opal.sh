@@ -23,8 +23,9 @@ fi
 ID=$1
 PACKAGE=$2
 
-docker cp $PACKAGE.tar.gz $ID:/opt/bedrock/package/
-docker exec $ID tar -zxf /opt/bedrock/package/$PACKAGE.tar.gz -C /opt/bedrock/package
-docker exec $ID pip install -e /opt/bedrock/package/$PACKAGE
+docker exec $ID mkdir -p /opt/bedrock/opals/
+docker cp $PACKAGE.tar.gz $ID:/opt/bedrock/opals/
+docker exec $ID tar -zxf /opt/bedrock/opals/$PACKAGE.tar.gz -C /opt/bedrock/opals
+docker exec $ID pip install -e /opt/bedrock/opals/$PACKAGE
 docker exec $ID service apache2 reload
 
