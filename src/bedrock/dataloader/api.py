@@ -237,7 +237,7 @@ class Sources(Resource):
         client = db_client()
         col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
         sources = list(col.find({},{"_id":0,"stash":0}))
-        
+
         return sources
 
     @api.hide
@@ -285,6 +285,15 @@ class Sources(Resource):
             Saves a new resource with a ID.
             Payload can be either a file or JSON structured configuration data. Returns the metadata for the new source.
             '''
+            client = db_client()
+            col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
+
+            # Check for an existing source with the same name.  For now do not overwrite
+            existing_source = col.find_one({'name':name},{"_id":0})
+            if existing_source:
+                response = {'error': 1, 'msg': "Source Already Exists", "src_id": existing_source['src_id']}
+                return response
+
             try:
                 src_id = utils.getNewId()
                 t = utils.getCurrentTime()
@@ -307,9 +316,6 @@ class Sources(Resource):
                 else:
                     src_type = 'conf'
                     rootpath, filepath = write_source_config(DATALOADER_PATH, src_id, conn_info)
-
-                client = db_client()
-                col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
 
                 rootpath = DATALOADER_PATH  + src_id + '/'
 
@@ -347,7 +353,7 @@ class Sources(Resource):
             client = db_client()
             col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
             sources = list(col.find({'group_name':group_name},{"_id":0}))
-            
+
             return sources
 
     @ns.route('/groups/')
@@ -477,7 +483,7 @@ class Sources(Resource):
                 '''
                 client = db_client()
                 col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
-                
+
                 src = col.find_one({'src_id':src_id})
                 if not src:
                     return 'No resource at that URL.', 404
