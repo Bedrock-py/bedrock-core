@@ -42,7 +42,7 @@ from bedrock.CONSTANTS import INGEST_COL_NAME, RESULTS_PATH, RESULTS_COL_NAME  #
 from bedrock.CONSTANTS import FILTERS_COL_NAME
 from bedrock.core.db import db_client, db_collection, find_matrix
 from bedrock.core.io import write_source_file, write_source_config
-from bedrock.core.models import Source, SourceCreated
+from bedrock.core.models import Source
 
 def explore(cur):
     """yields the matrices combined with their source information for the /dataloader/explorable/ endpoint
@@ -291,14 +291,17 @@ class Sources(Resource):
             # Check for an existing source with the same name.  For now do not overwrite
             existing_source = col.find_one({'name':name},{"_id":0})
             if existing_source:
-                response = {'error': 1, 'msg': "Source Already Exists", "src_id": existing_source['src_id']}
-                return response
+                logging.warn("Source Already Exists: {}".format(existing_source['src_id']))
+                existing_source['error'] = 1
+                existing_source['msg'] = "Source Already Exists"
+                return existing_source.dict()
 
             try:
                 src_id = utils.getNewId()
                 t = utils.getCurrentTime()
                 conn_info = request.get_json()
                 # conn_info = request.get_json(force=True)
+                filepath = None
                 if conn_info == None:
                     file = request.files['file']
                     ext = re.split('\.', file.filename)[1]
@@ -319,11 +322,14 @@ class Sources(Resource):
 
                 rootpath = DATALOADER_PATH  + src_id + '/'
 
-                source = Source(name, rootpath, src_id, src_type, t, ingest_id, group_name)
+                source = Source(name, rootpath, src_id, src_type, t, ingest_id, group_name, filepath=filepath)
+                source_insert_response = col.insert_one(source.dict())
+                if (source_insert_response == False):
+                    logging.error("Source Insert Failed")
+                    tb = traceback.format_exc()
+                    return tb, 406
 
-                col.insert(source.dict())
-
-                response = SourceCreated(source).dict()
+                response = col.find_one({'_id':source_insert_response.inserted_id},{"_id":0})
             except:
                 tb = traceback.format_exc()
                 return tb, 406
