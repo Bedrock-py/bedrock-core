@@ -27,7 +27,7 @@ class Source(Storable):
     """A class for representing a bedrock source."""
     def __init__(self, name, rootdir, src_id, src_type, time,
                  ingest_id, group_name, matrices=None,
-                 status=None, count=0, stash=None):
+                 status=None, count=0, stash=None, filepath=None):
         self.name = name
         self.host = [ip for ip in socket.gethostbyname_ex(socket.gethostname())[2]
                      if not ip.startswith("127.")][-1]
@@ -41,14 +41,4 @@ class Source(Storable):
         self.count = count
         self.stash = none2empty(stash)
         self.group_name = group_name
-
-class SourceCreated(Storable):
-    """A class that gets sent back on creation of a Source on the bedrock server"""
-    def __init__(self, source):
-        self.name = source.name
-        self.host = source.host
-        self.rootdir = source.rootdir
-        self.src_id = source.src_id
-        self.src_type = source.src_type
-        self.created = source.created
-        self.matrices_count = len(source.matrices)
+        self.filepath = filepath

@@ -23,7 +23,7 @@ import utils
 from bedrock.CONSTANTS import VIS_COL_NAME, VIS_DB_NAME, DATALOADER_PATH
 from bedrock.core.db import db_client, db_collection, find_matrix
 from bedrock.core.io import write_source_file, write_source_config
-from bedrock.core.models import Source, SourceCreated
+from bedrock.core.models import Source
 
 app = Flask(__name__)
 app.debug = True
