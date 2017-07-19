@@ -2,7 +2,8 @@
 """
 test.py: the main tests for bedrock.
 """
-from __future__ import print_function
+from __future__ import absolute_import, division, print_function
+from future_builtins import filter
 
 import logging
 import sys
@@ -148,12 +149,13 @@ def check_put(api, ssname, filename, ingest_id, group_id):
     """check that we can upload a source to the dataloader"""
     resp = api.put_source(ssname, ingest_id, group_id, {'file': open(filename, "rb")})
     pprint(resp.headers)
+    pprint(resp.text)
     created = resp.json()
     pprint(created)
     src_id = created['src_id']
 
     fetched = requests.get(api.endpoint("dataloader", "sources/%s" % src_id)).json()
-    #**WHY IS FETCHED['MATRICES'] == []?
+    #**WHY IS FETCHED['MATRICES'] == []? - JP: Because Matrices aren't created yet.  This is just a source for matrices
     assert fetched['name'] == ssname, "failed to retrieve ingested data"
     return created, fetched
 
@@ -312,15 +314,13 @@ def test_workflow_iris_pca():
     available_sources = bedrockapi.list("dataloader", "sources/").json()
     source_id = ""
 
-    if len(available_sources) < 4:
-        created, fetched = check_put(bedrockapi, source_name, "./iris.csv", "opals.spreadsheet.Spreadsheet.Spreadsheet", group_id)
-        source_id = created['src_id']
-        print("INFO: created source: %s" % source_id)
+
+    created, fetched = check_put(bedrockapi, source_name, "./iris.csv", "opals.spreadsheet.Spreadsheet.Spreadsheet", group_id)
+    source_id = created['src_id']
+    if (created['error'] == 1):
+        print("INFO: source already existed: %s" % source_id)
     else:
-        source_id = available_sources[0]['src_id']
-        print("Available Sources are: %s" % (s['src_id'] for s in available_sources))
-        print("Not uploading new source")
-        fetched = requests.get(bedrockapi.endpoint("dataloader", "sources/%s/" % source_id)).json()
+        print("INFO: created source: %s" % source_id)
 
     endpoint = bedrockapi.endpoint("dataloader", "sources/%s/explore/" % source_id)
     print("INFO: Getting source: %s" % endpoint)
@@ -433,7 +433,7 @@ def test_matrix():
     assert exploredresp.status_code == 200
     explored = exploredresp.json()
     print(explored)
-    mat = explored[0]
+    mat = next(filter(lambda source: source['name'] == 'iris', explored))
     src_id = mat['src_id']
     mat_id = mat['matrices'][0]['id']
     rootpath = mat['matrices'][0]['rootdir']
