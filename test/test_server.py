@@ -2,8 +2,8 @@
 """
 test.py: the main tests for bedrock.
 """
-from __future__ import absolute_import, division, print_function
-from future_builtins import filter
+
+#from future_builtins import filter
 
 import logging
 import sys
@@ -200,7 +200,7 @@ def check_explore_results(
 
     #DEFINE RECEIVED DATA TO COMPARE AGAINST
     exploration_results = resp.json()
-    mat_name = exploration_results.keys()[0]
+    mat_name = list(exploration_results.keys())[0]
     exploration_results = exploration_results[mat_name]['fields']
 
     #IMPORT REFERENCE DF
@@ -209,7 +209,7 @@ def check_explore_results(
     desc_stat_checklist = [idx for idx in describe_df.index.tolist() if idx != 'count']
 
     #DETERMINE NUMERIC AND CATEGORICAL COLUMN NAMES
-    numeric_keys = set([u'std', u'min', u'max', u'50%', u'suggestions', u'25%', u'75%', u'type', u'mean'])
+    numeric_keys = set(['std', 'min', 'max', '50%', 'suggestions', '25%', '75%', 'type', 'mean'])
     is_numeric_column = lambda v: set(v.keys()) == numeric_keys
     numeric_columns = [f for f, v in exploration_results if is_numeric_column(v)]
     categorical_columns = []
@@ -236,7 +236,7 @@ def check_explore_results(
     for field in categorical_columns:
         val_counts_ref = ref_df[field].value_counts()
         val_counts_resp = exploration_results[field]
-        for k in val_counts_resp.iterkeys():
+        for k in val_counts_resp.keys():
             if k in val_counts_ref.index.tolist():
                 assert val_counts_ref[k] == val_counts_resp[k],\
                        'Ref dataset does not match response for {}, {}'.format(field, k)
@@ -433,7 +433,7 @@ def test_matrix():
     assert exploredresp.status_code == 200
     explored = exploredresp.json()
     print(explored)
-    mat = next(filter(lambda source: source['name'] == 'iris', explored))
+    mat = next(source for source in explored if source['name'] == 'iris')
     src_id = mat['src_id']
     mat_id = mat['matrices'][0]['id']
     rootpath = mat['matrices'][0]['rootdir']
@@ -699,7 +699,7 @@ def workflow_2(
 
     #UPDATE PARAMETERS TO POST TO ANALYTICS/ANALYTIC_ID TO RUN ANALYTIC OF CHOICE
     #NOTE: this may not generalize depending on the params expected from other analyses
-    for k in analysis_postdata['inputs'].iterkeys():
+    for k in analysis_postdata['inputs'].keys():
         analysis_postdata['inputs'][k] = mtx_res
     analysis_postdata['src'] = [mtx_res]
     print('The parameters sent to the post request are:')
