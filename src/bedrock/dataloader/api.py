@@ -294,7 +294,7 @@ class Sources(Resource):
                 logging.warn("Source Already Exists: {}".format(existing_source['src_id']))
                 existing_source['error'] = 1
                 existing_source['msg'] = "Source Already Exists"
-                return existing_source.dict()
+                return existing_source
 
             try:
                 src_id = utils.getNewId()
