@@ -67,7 +67,7 @@ def get_metadata(vis_id):
 def generate_vis(vis_id, inputs, parameters):
     vis = get_class(vis_id)
     vis.initialize(inputs)
-    print 'PARAMS',parameters
+    print('PARAMS',parameters)
     initialize(vis, parameters)
 
     # if vis.check_parameters():
@@ -88,7 +88,7 @@ class Visualization(object):
             return True
         except AttributeError:
             raise
-            print 'Necessary attribute(s) not initialized'
+            print('Necessary attribute(s) not initialized')
             return False
 
 
