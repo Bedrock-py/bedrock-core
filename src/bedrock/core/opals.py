@@ -196,4 +196,4 @@ def manage_opals(mode, api, modulename):
                 return
 
     else:
-        print 'ERROR: No api named %s.'%modulename
+        print('ERROR: No api named %s.'%modulename)

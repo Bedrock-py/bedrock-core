@@ -23,6 +23,8 @@ from bedrock.core.utils import get_class
 import numpy as np
 import pandas as pd
 import pymongo
+import logging
+import traceback
 
 
 def getNewId():
@@ -189,13 +191,16 @@ def run_analysis(queue, analytic_id, parameters, inputs, storepath, name):
         try:
             alg.compute(inputs, storepath=storepath, name=name)
         except:
-            raise
+            tb = traceback.format_exc()
+            logging.error("Error running compute for analytics")
+            logging.error(tb)
             queue.put(None)
         alg.write_results(storepath)
         print(analytic_id.split('.')[-1] + ' successful')
         # return alg.get_outputs()
         queue.put(alg.get_outputs())
     else:
+        logging.error("Check Parameters failed")
         queue.put(None)
 
 
@@ -256,11 +261,10 @@ class Algorithm(object):
         #check to make sure inputs are set
         try:
             for each in self.parameters:
-                eval("self." + each)
+                getattr(self,each)
             return True
         except AttributeError:
-            raise
-            print('Necessary attribute(s) not initialized')
+            logging.error('Necessary attribute(s) not initialized')
             return False
 
     def write_results(self, storepath):
@@ -288,7 +292,6 @@ class Algorithm(object):
                         assert (len(outputData[0] == 1))
                         line = '\n'.join([str(x) for x in outputData])
                         featuresFile.write(line)
-
                 else:
                     #list
                     if 'csv' in key:
