@@ -46,5 +46,5 @@ else
   echo "$PACKAGE does not exist as $PACKAGE.tar.gz or directory"
   exit -1
 fi
-docker exec $ID pip install /opt/bedrock/opals/$PACKAGE
+docker exec $ID pip install -e /opt/bedrock/opals/$PACKAGE
 docker exec $ID service apache2 reload

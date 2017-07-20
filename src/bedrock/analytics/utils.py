@@ -273,9 +273,9 @@ class Algorithm(object):
 
     def write_output(self, rootpath, key, outputData):
         with open(rootpath + '/' + key, 'w') as featuresFile:
-            if 'json' in key:
+            if key.endswith('.json'):
                 featuresFile.write(outputData)
-            elif 'txt' in key:
+            elif key.endswith('.txt'):
                 line = '\n'.join([str(x) for x in outputData]) + '\n'
                 featuresFile.write(line)
             elif 'analytic' in key:
@@ -285,20 +285,20 @@ class Algorithm(object):
                 try:
                     len(outputData[0])
                 except TypeError:
-                    if 'csv' in key:
+                    if key.endswith('.csv'):
                         line = ','.join([str(x) for x in outputData])
                         featuresFile.write(line)
-                    elif 'txt' in key:
+                    elif key.endswith('.txt'):
                         assert (len(outputData[0] == 1))
                         line = '\n'.join([str(x) for x in outputData])
                         featuresFile.write(line)
                 else:
                     #list
-                    if 'csv' in key:
+                    if key.endswith('.csv'):
                         for element in outputData:
                             line = ','.join([str(x) for x in element])
                             featuresFile.write(line + '\n')
-                    elif 'json' in key:
+                    elif key.endswith('.json'):
                         featuresFile.write(outputData)
 
     def get_results(self):

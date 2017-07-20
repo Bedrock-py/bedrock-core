@@ -33,6 +33,7 @@ from flask import (Flask, Response, abort, g, jsonify, redirect, request,
 import flask_restful as restful
 from flask_restplus import Api, Resource, fields
 from werkzeug import secure_filename
+import logging
 
 import utils
 from bedrock.CONSTANTS import MONGO_HOST, MONGO_PORT, ANALYTICS_DB_NAME, ANALYTICS_COL_NAME, ANALYTICS_OPALS
@@ -622,7 +623,7 @@ class Analytics(Resource):
                 mat_id = datasrc['src_id']
             else:
                 mat_id = sub_id
-            storepath = os.path.join(RESULTS_PATH, mat_id, res_id)
+            storepath = os.path.join(RESULTS_PATH, mat_id, res_id) + "/"
             os.makedirs(storepath)
 
             # print("Extracted info for analytic:%s\n %s"%(analytic_id, {
@@ -647,6 +648,7 @@ class Analytics(Resource):
                 outputs = queue.get()
             except:
                 tb = traceback.format_exc()
+                logging.error(tb)
                 return tb, 406
 
             if outputs != None:
@@ -687,6 +689,7 @@ class Analytics(Resource):
                 return res, 201
             else:
                 tb = traceback.format_exc()
+                logging.error(tb)
                 return tb, 406
 
         @api.doc(
@@ -840,7 +843,7 @@ class Results(Resource):
             res = col.find_one({'src_id': src_id},{"_id":0})
             if not res:
                 return ('Not found', 404)
-            
+
             return res
 
     @ns_r.route('/<src_id>/<res_id>/')
