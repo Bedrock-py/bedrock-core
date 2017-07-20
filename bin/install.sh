@@ -2,6 +2,8 @@
 
 echo "INFO: setting up apache for bedrock"
 ln -s "/opt/bedrock/conf/bedrock.conf" /etc/apache2/sites-available/
+echo "INFO: moving static files into /var/www/html"
+cp /opt/bedrock/package/static/* /var/www/html/
 # ls $TARGET
 a2ensite bedrock
 # sudo service apache2 reload
