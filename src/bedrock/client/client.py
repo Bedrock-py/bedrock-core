@@ -90,4 +90,16 @@ class BedrockAPI(object):
         # Post to the dataloader/sources/source_id endpoint
         url = self.endpoint("dataloader", "sources/%s" % (src_id))
         resp = requests.post(url, json=matbody)
-        return resp
+        return resp.json()
+
+    def run_analytic(self, analytic_id, input_mtx, output_name, input_data={}, parameter_data=[]):
+        postData = {
+            'inputs': input_data,
+            'name': output_name,
+            'parameters': parameter_data,
+            'src': [input_mtx]
+        }
+
+        resp = self.post("analytics", "analytics/%s" % analytic_id, json=postData)
+        output_mtx = resp.json()
+        return output_mtx
