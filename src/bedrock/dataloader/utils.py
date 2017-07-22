@@ -291,7 +291,13 @@ class Ingest(object):
             pass # must not be a config file
         for key,value in additional_params.iteritems():
             conf[key] = value
-        for field, filt in posted_data['matrixFilters'].items():
+
+        try:
+            matrixFilters = posted_data['matrixFilters']
+        except KeyError:
+            matrixFilters = {}
+
+        for field, filt in matrixFilters.items():
             if len(filt) > 0:
                 if filt['stage'] == 'before':
                     if filt['type'] == 'extract':
@@ -303,12 +309,12 @@ class Ingest(object):
                         val = self.apply_filter(filt['filter_id'], filt['parameters'], conf)
                         if val != None:
                             matrices.append( val )
-                        posted_data['matrixFilters'].pop(field, None)
+                        matrixFilters.pop(field, None)
                     elif filt['type'] == 'convert':
                         pass
                     elif filt['type'] == 'add':
                         pass
-        return matrices, posted_data['matrixFilters']
+        return matrices, matrixFilters
 
     def apply_after_filters(self, maps, posted_data, matrices):
         # for i, feature in enumerate(posted_data['matrixFeaturesOriginal']):
