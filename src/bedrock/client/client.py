@@ -71,3 +71,23 @@ class BedrockAPI(object):
                                  (name, ingest_id, group_name))
         logging.info('putting source to: %s', endpoint)
         return requests.put(endpoint, files=payload)
+
+    def explore_source(self, src_id):
+        """ Returns the payload for exploring a source for its schema """
+        endpoint = self.endpoint("dataloader", "sources/%s/explore/" % src_id)
+        schema_data = requests.get(endpoint).json()
+        return schema_data
+
+    def create_matrix(self, src_id, mtx_name, filters=None):
+        # Create a matrix from a source
+        matbody = {
+            'matrixName': mtx_name
+        }
+
+        if filters is not None:
+            matbody['matrixFilters'] = filters
+
+        # Post to the dataloader/sources/source_id endpoint
+        url = self.endpoint("dataloader", "sources/%s" % (src_id))
+        resp = requests.post(url, json=matbody)
+        return resp
