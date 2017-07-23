@@ -12,6 +12,7 @@ and returning the responses as python objects.
 """
 import logging
 import requests
+import pandas
 
 logging.basicConfig(
     format='%(levelname)s: %(asctime)s: %(message)s', level=logging.INFO)
@@ -103,3 +104,30 @@ class BedrockAPI(object):
         resp = self.post("analytics", "analytics/%s" % analytic_id, json=postData)
         output_mtx = resp.json()
         return output_mtx
+
+    def download_results_matrix(self, result_id, remote_filename, local_filename="matrix.csv", remote_header_file=None):
+        url = self.endpoint("analytics", "results/download/%s/%s/%s" % (result_id, remote_filename, local_filename))
+        resp = requests.get(url)
+
+        try:
+            from StringIO import StringIO
+        except Exception:
+            from io import StringIO
+
+        mtx = pandas.read_csv(StringIO(resp.text), header=-1)
+
+        # Header file provided
+        if remote_header_file is not None:
+            url = self.endpoint("analytics", "results/download/%s/%s/%s" % (result_id, remote_header_file, "headers.csv"))
+            resp = requests.get(url)
+
+            try:
+                from StringIO import StringIO
+            except Exception:
+                from io import StringIO
+
+            headers = pandas.read_csv(StringIO(resp.text), header=-1)
+
+            mtx.columns = headers.T.values[0]
+
+        return mtx
