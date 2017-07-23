@@ -21,11 +21,19 @@ def drop_id_key(record):
     """returns a copy of record without the key _id """
     return {key: value for key, value in record.items() if key != '_id'}
 
+def find_source(col, src_id):
+    """find a source from pymongo collection"""
+    source = col.find_one({'src_id':src_id},{"_id":0})
+    if not source:
+        source = col.find_one({'name':src_id},{"_id":0})
+        if not source:
+            return None
+    return source
 
 def find_matrix(col, src_id, mat_id):
     """finds a matrix of source in the collection col"""
     # matrix = col.find({'src_id':src_id, 'matrices.id':mtxid })
-    matrices = col.find({'src_id': src_id})[0]['matrices']
+    matrices = find_source(col, src_id)['matrices']
     matrix_manual = None
     for matrix in matrices:
         if matrix['id'] == mat_id:

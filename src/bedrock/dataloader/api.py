@@ -40,7 +40,7 @@ import utils
 from bedrock.CONSTANTS import DATALOADER_COL_NAME, DATALOADER_DB_NAME, DATALOADER_PATH
 from bedrock.CONSTANTS import INGEST_COL_NAME, RESULTS_PATH, RESULTS_COL_NAME  #, RESPATH
 from bedrock.CONSTANTS import FILTERS_COL_NAME
-from bedrock.core.db import db_client, db_collection, find_matrix
+from bedrock.core.db import db_client, db_collection, find_matrix, find_source
 from bedrock.core.io import write_source_file, write_source_config
 from bedrock.core.models import Source
 
@@ -59,15 +59,6 @@ def explore(cur):
             exp['created'] = matrix['created']
             exp['mat_type'] = matrix['mat_type']
             yield exp
-
-
-def find_source(col, src_id):
-    """find a source from pymongo collection"""
-    return col.find_one({'src_id':src_id})
-
-def find_results(col, mat_id):
-    """find the list of results associated with a matrix"""
-    return col.find_one({'src_id':mat_id})['results']
 
 app = Flask(__name__)
 app.debug = True
@@ -268,7 +259,7 @@ class Sources(Resource):
             client = db_client()
             col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
             try:
-                matrices = col.find_one({'src_id':src_id})['matrices']
+                matrices = find_source(col, src_id)['matrices']
             except IndexError:
                 response = {}
                 # return ('No resource at that URL.', 404)
@@ -289,7 +280,7 @@ class Sources(Resource):
             col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
 
             # Check for an existing source with the same name.  For now do not overwrite
-            existing_source = col.find_one({'name':name},{"_id":0})
+            existing_source = find_source(col, name)
             if existing_source:
                 logging.warn("Source Already Exists: {}".format(existing_source['src_id']))
                 existing_source['error'] = 1
@@ -382,12 +373,14 @@ class Sources(Resource):
         def get(self, src_id):
             '''
             Returns metadata and a list of matrices available for a particular source.
+
+            src_id can be the UUID or name of the source
             '''
             client = db_client()
             col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
             try:
-                response = col.find_one({'src_id':src_id},{"_id":0})
-                if not response:
+                response = find_source(col, src_id)
+                if response is None:
                     return 'No resource at that URL', 404
             except Exception as e:
                 return 'Unexpected error %s'%e, 500
@@ -421,7 +414,6 @@ class Sources(Resource):
                         # this subtree is deleted when the DATALOADER_PATH/src_id gets removed later
                         # shutil.rmtree(os.path.join(DATALOADER_PATH, src_id, mat_id))
                         try:
-                            # res = find_results(col, mat_id)
                             logging.info('going to remove %s/%s', RESPATH, mat_id)
                             shutil.rmtree(os.path.join(RESPATH, mat_id))
                             rescol.remove({'src_id':mat_id})
@@ -459,7 +451,7 @@ class Sources(Resource):
                 col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
 
                 try:
-                    src = col.find_one({'src_id':src_id})
+                    src = find_source(col, src_id)
 
                 except IndexError:
                     return 'No resource at that URL.', 404
@@ -490,7 +482,7 @@ class Sources(Resource):
                 client = db_client()
                 col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
 
-                src = col.find_one({'src_id':src_id})
+                src = find_source(col, src_id)
                 if not src:
                     return 'No resource at that URL.', 404
 
@@ -508,7 +500,7 @@ class Sources(Resource):
                 client = db_client()
                 col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
                 try:
-                    src = col.find_one({'src_id':src_id})
+                    src = find_source(col, src_id)
                 except IndexError:
                     return 'No resource at that URL.', 404
                 filepath = src['rootdir']
@@ -518,7 +510,7 @@ class Sources(Resource):
                 client = db_client()
                 col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
                 try:
-                    src = col.find_one({'src_id':src_id})
+                    src = find_source(col, src_id)
                 except IndexError:
                     return 'No resource at that URL.', 404
                 filepath = src['rootdir']
@@ -531,7 +523,7 @@ class Sources(Resource):
                 client = db_client()
                 col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
                 try:
-                    src = col.find_one({'src_id':src_id})
+                    src = find_source(col, src_id)
                 except IndexError:
                     return 'No resource at that URL.', 404
                 filepath = src['rootdir']
@@ -541,7 +533,7 @@ class Sources(Resource):
                 client = db_client()
                 col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
                 try:
-                    src = col.find_one({'src_id':src_id})
+                    src = find_source(col, src_id)
                 except IndexError:
                     return 'No resource at that URL.', 404
                 filepath = src['rootdir']
@@ -558,7 +550,7 @@ class Sources(Resource):
                 client = db_client()
                 col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
                 try:
-                    src = col.find_one({'src_id':src_id})
+                    src = find_source(col, src_id)
 
                 except IndexError:
                     return 'No resource at that URL.', 404
@@ -580,7 +572,7 @@ class Sources(Resource):
                 client = db_client()
                 col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
                 try:
-                    src = col.find_one({'src_id':src_id})
+                    src = find_source(col, src_id)
 
                 except IndexError:
                     return 'No resource at that URL.', 404
@@ -605,7 +597,7 @@ class Sources(Resource):
                 client = db_client()
                 col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
                 try:
-                    matrices = col.find_one({'src_id':src_id},{"_id":0})['matrices']
+                    matrices = find_source(col, src_id)['matrices']
 
                 except IndexError:
                     return 'No resource at that URL.', 404
@@ -625,7 +617,7 @@ class Sources(Resource):
                 client = db_client()
                 col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
                 try:
-                    matrices = col.find_one({'src_id':src_id})['matrices']
+                    matrices = find_source(col, src_id)['matrices']
 
                 except IndexError:
                     return 'No resource at that URL.', 404
