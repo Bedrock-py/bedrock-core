@@ -265,7 +265,7 @@ class Sources(Resource):
                 # return ('No resource at that URL.', 404)
             else:
                 for matrix in matrices:
-                    if matrix['id'] == matrix_id:
+                    if matrix['id'] == matrix_id or matrix['name'] == matrix_id:
                         return send_from_directory(matrix['rootdir'],output_file, as_attachment=True, attachment_filename=file_download_name)
 
     @ns.route('/<name>/<ingest_id>/<group_name>/')

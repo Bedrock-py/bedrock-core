@@ -36,7 +36,7 @@ def find_matrix(col, src_id, mat_id):
     matrices = find_source(col, src_id)['matrices']
     matrix_manual = None
     for matrix in matrices:
-        if matrix['id'] == mat_id:
+        if matrix['id'] == mat_id or matrix['name'] == mat_id:
             matrix_manual = matrix
     # assert matrix == matrix_manual
     return matrix_manual
