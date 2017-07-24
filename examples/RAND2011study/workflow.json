@@ -1,0 +1,65 @@
+{
+  "nodes": [
+    {
+      "inputs": {},
+      "outputs": {
+        "matrix_id": 1,
+        "src_id": 0
+      },
+      "head": "txt_ingest_cooperation_data",
+      "meta": {
+        "opalclass": "opals.spreadsheet.Spreadsheet.Spreadsheet",
+        "parameters": {
+          "name": "source name"
+        },
+        "description": "Loads data from CSV or Microsoft Excel spreadsheets."
+      },
+      "args": []
+    },
+    {
+      "inputs": {
+        "matrix_id": 1,
+        "src_id": 0
+      },
+      "outputs": {
+        "matrix_id": 2
+      },
+      "head": "filter_1",
+      "meta": {
+        "opalclass": "filter",
+        "parameters": {
+          "comparator": ">",
+          "colname": "num_neighbors",
+          "value": 0
+        },
+        "description": "Filters out low degree vertices"
+      },
+      "args": []
+    },
+    {
+      "inputs": {
+        "matrix_id": 2,
+        "src_id": 0
+      },
+      "outputs": {
+        "matrix_id": 3
+      },
+      "head": "log_1",
+      "meta": {
+        "opalclass": "opals.logit2.Logit2.Logit2",
+        "parameters": [],
+        "description": "Cooperation over round in each treatment"
+      },
+      "args": []
+    }
+  ],
+  "bundles": [
+    "",
+    "",
+    "",
+    ""
+  ],
+  "id": 1,
+  "description": "Basic Workflow",
+  "name": "workflow1"
+}
