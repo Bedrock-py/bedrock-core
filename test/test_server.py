@@ -257,7 +257,8 @@ def check_make_matrix(api, source_id, matbody):
     # assert resp.status_code == 201, "Failed to create matrix: %d: %s" % (resp.status_code,
     #                                                                      resp.text)
     output = resp.json()
-    logging.info('tried to make matrix %s. Response:\n%s', source_id, output)
+    logging.info('tried to make matrix %s. Response:', source_id)
+    logging.info(output)
     return output
 
 
@@ -278,7 +279,9 @@ def check_analysis(api, analytic_id, source_id, postdata):
     resp = api.post("analytics", "analytics/%s" % analytic_id, json=postdata)
     assert resp.status_code == 201, "Failed to run the analytic: %d: %s: %s" % (
         resp.status_code, resp.text, analytic_id)
-    return resp.json()
+    result_mtx = resp.json()
+    print(resp.json())
+    return result_mtx
 
 
 def test_api_lists():
@@ -715,11 +718,13 @@ def workflow_2(
     analysis_res = check_analysis(api, analytic_id,
                                   source_id, analysis_postdata)
     print("INFO: received analytic post response")
+    pprint(analysis_res)
     analysis_res = unpack_singleton_list(analysis_res)
     print("INFO: print analysis response")
     pprint(analysis_res) #analysis_res documents identifying params of analysis that we just ran
     print('\n')
 
+    '''
     available_vizs = get_available_viz_list(api, mtx_res)
     if plotname not in available_vizs:
         logging.warning('%s not listed in available visualization for your dataset', plotname)
@@ -740,6 +745,8 @@ def workflow_2(
         plot_inputs['matrix.csv'] = analysis_res
         plot_inputs['features.txt'] = mtx_res
 
+    pprint(getplot_data)
+
     resp = api.post(
         "visualization", "visualization/%s/" % plotname, json=getplot_data)
     log_failure(api, "creating visualization failed for %s" % plotname, resp, 200)
@@ -748,6 +755,7 @@ def workflow_2(
     print('Successfully created plot for {} {} {}'.format(
                 source_name, analytic_id, plotname))
     print('\n')
+    '''
 
     # #NEEDS WORK - want to save so that you can instantly open it in a browser
     # viz_html = resp.json()['data']
