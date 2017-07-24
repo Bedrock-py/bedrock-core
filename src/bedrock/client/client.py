@@ -115,14 +115,15 @@ class BedrockAPI(object):
                 from StringIO import StringIO
             except Exception:
                 from io import StringIO
-            mtx = pandas.read_csv(StringIO(resp.text), header=-1)
+
+            mtx = pandas.read_csv(StringIO(resp.text), header=-1, quotechar='"', skipinitialspace=True)
 
             # Header file provided
             if remote_header_file is not None:
                 url = self.endpoint("analytics", "results/%s/%s/download/%s/%s" % (src_id, result_id, remote_header_file, "headers.csv"))
                 resp = requests.get(url)
 
-                headers = pandas.read_csv(StringIO(resp.text), header=-1)
+                headers = pandas.read_csv(StringIO(resp.text), header=-1, quotechar='"', skipinitialspace=True)
 
                 mtx.columns = headers.T.values[0]
         else:

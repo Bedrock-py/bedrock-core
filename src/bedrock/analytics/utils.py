@@ -284,11 +284,13 @@ class Algorithm(object):
                 write_analytic(outputData['text'], outputData['classname'])
             else:
                 #check if each element is a single element or list
+                if len(outputData) == 0:
+                    return
                 try:
                     len(outputData[0])
                 except TypeError:
                     if key.endswith('.csv'):
-                        line = ','.join([str(x) for x in outputData])
+                        line = ','.join(['"' + str(x) + '"' for x in outputData])
                         featuresFile.write(line)
                     elif key.endswith('.txt'):
                         assert (len(outputData[0] == 1))
@@ -298,7 +300,7 @@ class Algorithm(object):
                     #list
                     if key.endswith('.csv'):
                         for element in outputData:
-                            line = ','.join([str(x) for x in element])
+                            line = ','.join(['"' + str(x) + '"' for x in element])
                             featuresFile.write(line + '\n')
                     elif key.endswith('.json'):
                         featuresFile.write(outputData)
