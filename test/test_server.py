@@ -151,10 +151,13 @@ def check_put(api, ssname, filename, ingest_id, group_id):
     pprint(resp.headers)
     pprint(resp.text)
     created = resp.json()
-    pprint(created)
+    logging.info("Created")
+    logging.info(created)
     src_id = created['src_id']
 
     fetched = requests.get(api.endpoint("dataloader", "sources/%s" % src_id)).json()
+    logging.info("Featched")
+    logging.info(fetched)
     #**WHY IS FETCHED['MATRICES'] == []? - JP: Because Matrices aren't created yet.  This is just a source for matrices
     assert fetched['name'] == ssname, "failed to retrieve ingested data"
     return created, fetched
@@ -317,7 +320,7 @@ def test_workflow_iris_pca():
 
     created, fetched = check_put(bedrockapi, source_name, "./iris.csv", "opals.spreadsheet.Spreadsheet.Spreadsheet", group_id)
     source_id = created['src_id']
-    if (created['error'] == 1):
+    if ("error" in created and created['error'] == 1):
         print("INFO: source already existed: %s" % source_id)
     else:
         print("INFO: created source: %s" % source_id)
