@@ -604,7 +604,7 @@ class Sources(Resource):
 
                 else:
                     for matrix in matrices:
-                        if matrix['id'] == mat_id:
+                        if matrix['id'] == mat_id or matrix['name'] == mat_id:
                             return matrix
 
                     return 'No resource at that URL.', 404
@@ -626,7 +626,7 @@ class Sources(Resource):
                     matrices_new = []
                     found = False
                     for each in matrices:
-                        if each['id'] != mat_id:
+                        if each['id'] != mat_id and each['name'] != mat_id:
                             matrices_new.append(each)
                         else:
                             found = True

@@ -13,6 +13,7 @@ and returning the responses as python objects.
 import logging
 import requests
 import pandas
+import os
 
 logging.basicConfig(
     format='%(levelname)s: %(asctime)s: %(message)s', level=logging.INFO)
@@ -109,25 +110,28 @@ class BedrockAPI(object):
         url = self.endpoint("analytics", "results/%s/%s/download/%s/%s" % (src_id, result_id, remote_filename, local_filename))
         resp = requests.get(url)
 
-        try:
-            from StringIO import StringIO
-        except Exception:
-            from io import StringIO
-
-        mtx = pandas.read_csv(StringIO(resp.text), header=-1)
-
-        # Header file provided
-        if remote_header_file is not None:
-            url = self.endpoint("analytics", "results/%s/%s/download/%s/%s" % (src_id, result_id, remote_header_file, "headers.csv"))
-            resp = requests.get(url)
-
+        if remote_filename.endswith(".csv"):
             try:
                 from StringIO import StringIO
             except Exception:
                 from io import StringIO
+            mtx = pandas.read_csv(StringIO(resp.text), header=-1)
 
-            headers = pandas.read_csv(StringIO(resp.text), header=-1)
+            # Header file provided
+            if remote_header_file is not None:
+                url = self.endpoint("analytics", "results/%s/%s/download/%s/%s" % (src_id, result_id, remote_header_file, "headers.csv"))
+                resp = requests.get(url)
 
-            mtx.columns = headers.T.values[0]
+                headers = pandas.read_csv(StringIO(resp.text), header=-1)
+
+                mtx.columns = headers.T.values[0]
+        else:
+            logging.error("Unknown remote file format")
+            return None
 
         return mtx
+
+    def get_matrix_metadata(self, src_id, mtx_id):
+        url = self.endpoint("dataloader", "sources/%s/%s" % (src_id, mtx_id))
+        resp = requests.get(url)
+        return resp.json()

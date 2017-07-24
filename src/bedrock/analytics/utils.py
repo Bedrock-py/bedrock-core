@@ -272,7 +272,9 @@ class Algorithm(object):
             self.write_output(storepath, key, res)
 
     def write_output(self, rootpath, key, outputData):
-        with open(rootpath + '/' + key, 'w') as featuresFile:
+        filepath = rootpath + '/' + key
+
+        with open(filepath, 'w') as featuresFile:
             if key.endswith('.json'):
                 featuresFile.write(outputData)
             elif key.endswith('.txt'):
