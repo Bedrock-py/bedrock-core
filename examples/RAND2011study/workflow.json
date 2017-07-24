@@ -1,65 +1,65 @@
 {
-  name: 'Workflow Name',
-  description: 'Workflow description.',
-  summary: [
+  "nodes": [
     {
-      opal_metadata: {
-        ingest_id: 'opals.spreadsheet.Spreadsheet.Spreadsheet',
-        // Really just need a source name for csv ingest
-        parameters: {
-          name: 'source name'
-        }
+      "inputs": {},
+      "outputs": {
+        "matrix_id": 1,
+        "src_id": 0
       },
-      description: 'Loads data from CSV or Microsoft Excel spreadsheets.',
-      instance_id: 'txt_ingest_cooperation_data',
-      input: [],
-      // If the opal was ran, store resulting source and matrix ids here
-      output: {
-        src_id: '8e9eebbbd85c43f283165b71dd75f204',
-        matrix_id: '57779eb6dc6e4c38bf008ceb474e3b81'
-      }
-    },
-
-    {
-      opal_metadata: {
-        filter_id: 'filter',
-        inputs: {
-          src_id: '8e9eebbbd85c43f283165b71dd75f204',
-          matrix_id: '57779eb6dc6e4c38bf008ceb474e3b81'
+      "head": "txt_ingest_cooperation_data",
+      "meta": {
+        "opalclass": "opals.spreadsheet.Spreadsheet.Spreadsheet",
+        "parameters": {
+          "name": "source name"
         },
-        parameters: [
-          {
-            comparator: '>',
-            colname: 'num_neighbors',
-            value: 0
-          }
-        ]
+        "description": "Loads data from CSV or Microsoft Excel spreadsheets."
       },
-      description: 'num_neighbors>0',
-      instance_id: 'filter_1',
-      // Input is the workflow opal instance id of preceding node
-      input: ['txt_ingest_cooperation_data'],
-      output: {
-        matrix_id: '98033cc4ed5644d5913b7f46750c24e1'
-      }
+      "args": []
     },
-
     {
-      opal_metadata: {
-        analytic_id: 'opals.logit2.Logit2.Logit2',
-        inputs: {
-          src_id: '8e9eebbbd85c43f283165b71dd75f204',
-          matrix_id: '98033cc4ed5644d5913b7f46750c24e1'
-        },
-        parameters: []
+      "inputs": {
+        "matrix_id": 1,
+        "src_id": 0
       },
-      description: 'Cooperation over round in each treatment.',
-      instance_id: 'log_1',
-      // Input is the workflow opal instance id of preceeding node
-      input: ['filter_1'],
-      output: {
-        matrix_id: '14a1a0168891475792321996a0b15b95'
-      }
+      "outputs": {
+        "matrix_id": 2
+      },
+      "head": "filter_1",
+      "meta": {
+        "opalclass": "filter",
+        "parameters": {
+          "comparator": ">",
+          "colname": "num_neighbors",
+          "value": 0
+        },
+        "description": "Filters out low degree vertices"
+      },
+      "args": []
+    },
+    {
+      "inputs": {
+        "matrix_id": 2,
+        "src_id": 0
+      },
+      "outputs": {
+        "matrix_id": 3
+      },
+      "head": "log_1",
+      "meta": {
+        "opalclass": "opals.logit2.Logit2.Logit2",
+        "parameters": [],
+        "description": "Cooperation over round in each treatment"
+      },
+      "args": []
     }
-  ]
+  ],
+  "bundles": [
+    "",
+    "",
+    "",
+    ""
+  ],
+  "id": 1,
+  "description": "Basic Workflow",
+  "name": "workflow1"
 }
