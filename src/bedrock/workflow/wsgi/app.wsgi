@@ -17,6 +17,6 @@ logging.basicConfig(stream=sys.stderr)
 sys.path.insert(0, '/var/www/bedrock/')
 sys.path.insert(0, '/var/www/bedrock/src/')
 from flask_cors import CORS
-from bedrock.analytics.api import app as application
+from bedrock.workflow.api import app as application
 
 CORS(application, expose_headers='Content-Type')
