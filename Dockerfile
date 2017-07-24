@@ -96,13 +96,16 @@ EXPOSE 28017
 # it is definitely a hack that should be removed (added 6/10/2016)
 # we should either decompose this service or use http://phusion.github.io/baseimage-docker/#solution
 # as the base image, in order run multiple processes in a single container.
+ADD ./bin/                  /opt/bedrock/bin
+RUN ls -lah /opt/bedrock/bin
+RUN bash /opt/bedrock/bin/installR.sh
+
 RUN mkdir -p /data/db
 RUN mkdir -p /opt/bedrock/conf
 RUN mkdir -p /opt/bedrock/bin
 RUN mkdir -p /opt/bedrock/package
 
 ADD ./conf/bedrock.conf     /opt/bedrock/conf/bedrock.conf
-ADD ./bin/                  /opt/bedrock/bin
 ADD .                       /opt/bedrock/package
 ADD ./conf/mongod.init.d    /etc/init.d/mongod
 
