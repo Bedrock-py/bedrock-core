@@ -104,6 +104,14 @@ def results_collection():
         db = g._mongodb = MongoClient(MONGO_HOST, MONGO_PORT)
     return db, db[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
 
+def get_results_source(src_id):
+    _, col = results_collection()
+    res = col.find_one({'src_id': src_id}, {"_id":0})
+    if not res:
+        res = col.find_one({'src.name': src_id}, {"_id":0})
+
+    return res
+
 @app.teardown_appcontext
 def teardown_db(exception):
     """closes the database connection"""
@@ -784,30 +792,6 @@ class Results(Resource):
 
             return explorable
 
-    @ns_r.route(
-        '/download/<res_id>/<output_file>/<file_download_name>/')
-    class Download(Resource):
-        def get(self, res_id, output_file, file_download_name):
-            '''
-            Downloads the specified result.
-            Returns the specific file indicated by the user.
-            '''
-
-            _, col = results_collection()
-            res = col.find_one({'results.id':res_id})
-            if not res:
-                pass
-            else:
-                for result in res['results']:
-                    if result['id'] == res_id:
-                        return send_from_directory(
-                            result['rootdir'],
-                            output_file,
-                            as_attachment=True,
-                            attachment_filename=file_download_name)
-
-            return ('No resource at that URL.', 404)
-
     @ns_r.route('/<src_id>/')
     @api.doc(
         params={'src_id': 'The ID assigned to a particular result\'s source'})
@@ -822,15 +806,14 @@ class Results(Resource):
             This will permanently remove this result tree from the system. USE CAREFULLY!
 
             '''
-            _, col = results_collection()
-            try:
-                res = col.find({'src_id': src_id})[0]['results']
+            res = get_results_source(src_id)
 
+            try:
+                src = src['results']
             except IndexError:
                 return 'No resource at that URL.', 404
-
             else:
-                col.remove({'src_id': src_id})
+                col.remove(res)
                 shutil.rmtree(os.path.join(RESULTS_PATH + src_id))
                 return '', 204
 
@@ -839,8 +822,7 @@ class Results(Resource):
             '''
             Returns the specified result tree.
             '''
-            _, col = results_collection()
-            res = col.find_one({'src_id': src_id},{"_id":0})
+            res = get_results_source(src_id)
             if not res:
                 return ('Not found', 404)
 
@@ -860,9 +842,9 @@ class Results(Resource):
             Deletes specified result.
             This will permanently remove this result from the system. USE CAREFULLY!
             '''
-            _, col = results_collection()
             try:
-                res = col.find({'src_id': src_id})[0]['results']
+                res = get_results_source(src_id)
+                res = res['results']
 
             except IndexError:
                 return 'No resource at that URL.', 404
@@ -871,7 +853,7 @@ class Results(Resource):
                 results_new = []
                 found = False
                 for each in res:
-                    if each['id'] != res_id:
+                    if each['id'] != res_id and each['name'] != res_id:
                         results_new.append(each)
                     else:
                         found = True
@@ -893,9 +875,9 @@ class Results(Resource):
             '''
             Returns the specified result.
             '''
-            _, col = results_collection()
             try:
-                res = col.find_one({'src_id': src_id},{"_id":0})['results']
+                res = get_results_source(src_id)
+                res = res['results']
 
             except IndexError:
                 response = {}
@@ -903,7 +885,31 @@ class Results(Resource):
 
             else:
                 for result in res:
-                    if result['id'] == res_id:
+                    if result['id'] == res_id or result['name'] == res_id:
                         return {'result': result}
 
             return 'No resource at that URL.', 404
+
+        @ns_r.route(
+        '/<src_id>/<res_id>/download/<output_file>/<file_download_name>/')
+        class Download(Resource):
+            def get(self, src_id, res_id, output_file, file_download_name):
+                '''
+                Downloads the specified result.
+                Returns the specific file indicated by the user.
+                '''
+                res = get_results_source(src_id)
+
+                if not res:
+                    pass
+                else:
+                    res = res['results']
+                    for result in res:
+                        if result['id'] == res_id or result['name'] == res_id:
+                            return send_from_directory(
+                                result['rootdir'],
+                                output_file,
+                                as_attachment=True,
+                                attachment_filename=file_download_name)
+
+                return ('No resource at that URL.', 404)

@@ -105,8 +105,8 @@ class BedrockAPI(object):
         output_mtx = resp.json()
         return output_mtx
 
-    def download_results_matrix(self, result_id, remote_filename, local_filename="matrix.csv", remote_header_file=None):
-        url = self.endpoint("analytics", "results/download/%s/%s/%s" % (result_id, remote_filename, local_filename))
+    def download_results_matrix(self, src_id, result_id, remote_filename, local_filename="matrix.csv", remote_header_file=None):
+        url = self.endpoint("analytics", "results/%s/%s/download/%s/%s" % (src_id, result_id, remote_filename, local_filename))
         resp = requests.get(url)
 
         try:
@@ -118,7 +118,7 @@ class BedrockAPI(object):
 
         # Header file provided
         if remote_header_file is not None:
-            url = self.endpoint("analytics", "results/download/%s/%s/%s" % (result_id, remote_header_file, "headers.csv"))
+            url = self.endpoint("analytics", "results/%s/%s/download/%s/%s" % (src_id, result_id, remote_header_file, "headers.csv"))
             resp = requests.get(url)
 
             try:
