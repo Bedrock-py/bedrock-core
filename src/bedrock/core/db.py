@@ -1,5 +1,6 @@
 """db.py is a layer for interacting with the database across all of the bedrock apis."""
 import pymongo
+from bson import ObjectId
 from bedrock.CONSTANTS import MONGO_HOST, MONGO_PORT, DATALOADER_DB_NAME
 
 def db_client(host=MONGO_HOST, port=MONGO_PORT):
@@ -20,6 +21,15 @@ def get_db_config(client, config_db="bedrock_config", config_collection="config"
 def drop_id_key(record):
     """returns a copy of record without the key _id """
     return {key: value for key, value in record.items() if key != '_id'}
+
+def serialize_id_key(record):
+    """returns a copy of record with all bson.ObjectIds serialized into a string """
+    def filt(value):
+        if isinstance(value, ObjectId):
+            return str(value)
+        else:
+            return value
+    return {key: filt(value) for key, value in record.items()}
 
 def find_source(col, src_id):
     """find a source from pymongo collection"""

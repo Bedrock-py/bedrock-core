@@ -1,0 +1,455 @@
+var cooperation_analysis_workflow = {
+  name: 'Cooperation Analysis',
+  description: 'Analyze the Cooperation experiment.',
+  summary: [
+    {
+      opal_metadata: {
+        classname: 'BBtoCSV',
+        description: 'Generate Breadboard CSV output.',
+        utility_id: 'bb_csv',
+        name: 'Breadboard to CSV',
+        parameters: [
+
+        ]
+      },
+      instance_name: 'BreadboardToCSV',
+      description: 'Generate Breadboard CSV output.',
+      instance_id: 'bb_to_csv',
+      input: []
+    },
+
+    {
+      opal_metadata: {
+        classname: 'Spreadsheet',
+        description: 'Loads data from CSV or Microsoft Excel spreadsheets.',
+        ingest_id: 'opals.spreadsheet.Spreadsheet.Spreadsheet',
+        name: 'CSV/Microsoft Excel',
+        parameters: [
+          {
+            name: 'file',
+            type: 'file',
+            value: '.csv,.xls,.xlsx'
+          }
+        ]
+      },
+      instance_name: 'Spreadsheet',
+      description: 'Loads data from CSV or Microsoft Excel spreadsheets.',
+      instance_id: 'txt_ingest_cooperation_data',
+      input: ['bb_to_csv']
+    },
+
+    //// LINE 8 ??????????????????
+
+    //// LINE 9
+    {
+      opal_metadata: {
+        classname: 'Summarize',
+        description: 'Summarize on a matrix.',
+        analytic_id: 'opals.summarize.Summarize.Summarize',
+        name: 'Summarize',
+        parameters: [
+          {
+            groupby: 'condition,round_num',
+            columns: 'decision0d1c'
+          }
+        ]
+      },
+      instance_name: 'Summarize',
+      description: 'Summarize decision grouped on condition and round_num.',
+      instance_id: 'sum_1',
+      input: ['txt_ingest_cooperation_data']
+    },
+
+    // Line 10
+    {
+      opal_metadata: {
+        classname: 'Logit2',
+        description: 'Performs Logit2 analysis on the input dataset.',
+        analytic_id: 'opals.logit2.Logit2.Logit2',
+        name: 'Logit2',
+        parameters: [
+          {
+            formula: 'decision0d1c ~ round_num',
+            family: 'binomial',
+            clustered_rse: 'sessionnum,playerid'
+          }
+        ]
+      },
+      instance_name: 'Logit2',
+      description: 'Cooperation over round in each treatment.',
+      instance_id: 'log_1',
+      input: ['txt_ingest_cooperation_data']
+    },
+
+    //// LINE 12
+    {
+      opal_metadata: {
+        classname: 'Summarize',
+        description: 'Summarize on a matrix.',
+        analytic_id: 'opals.summarize.Summarize.Summarize',
+        name: 'Summarize',
+        parameters: [
+          {
+            groupby: 'condition,round_num',
+            columns: 'decision0d1c'
+          }
+        ]
+      },
+      instance_name: 'Summarize',
+      description: 'Summarize on filtered matrix.',
+      instance_id: 'sum_2',
+      input: ['txt_ingest_cooperation_data']
+    },
+
+    // Line 13
+    {
+      opal_metadata: {
+        classname: 'Filter',
+        description: 'Filter columns of a matrix.',
+        analytic_id: 'opals.select-from-dataframe.SelectByCondition.SelectByCondition',
+        name: 'Filter',
+        parameters: [{
+          comparator: '>',
+          colname: 'num_neighbors',
+          value: 0
+        }]
+      },
+      instance_name: 'Filter',
+      description: 'num_neighbors>0',
+      instance_id: 'filter_1',
+      input: ['txt_ingest_cooperation_data']
+    },
+
+    {
+      opal_metadata: {
+        classname: 'Logit2',
+        description: 'Performs Logit2 analysis on the input dataset.',
+        analytic_id: 'opals.logit2.Logit2.Logit2',
+        name: 'Logit2',
+        parameters: [
+          {
+            formula: 'decision0d1c ~ round_num',
+            family: 'binomial',
+            clustered_rse: 'sessionnum,playerid'
+          }
+        ]
+      },
+      instance_name: 'Logit2',
+      description: 'Cooperation over round in each treatment excluding guys with no connections.',
+      instance_id: 'log_2',
+      input: ['filter_1']
+    },
+
+    //// LINE 18 ???????????????????
+
+    // Line 19
+    {
+      opal_metadata: {
+        classname: 'Filter',
+        description: 'Filter columns of a matrix.',
+        analytic_id: 'opals.select-from-dataframe.SelectByCondition.SelectByCondition',
+        name: 'Filter',
+        parameters: [{
+          comparator: '==',
+          colname: 'round_num',
+          value: "1"
+        }]
+      },
+      instance_name: 'Filter',
+      description: 'round_num==1',
+      instance_id: 'filter_2',
+      input: ['txt_ingest_cooperation_data']
+    },
+
+    {
+      opal_metadata: {
+        classname: 'Logit2',
+        description: 'Performs Logit2 analysis on the input dataset.',
+        analytic_id: 'opals.logit2.Logit2.Logit2',
+        name: 'Logit2',
+        parameters: [
+          {
+            formula: 'decision0d1c ~ C(fluid_dummy)*round_num',
+            family: 'binomial',
+            clustered_rse: 'sessionnum,playerid'
+          }
+        ]
+      },
+      instance_name: 'Logit2',
+      description: 'No difference in cooperation between fluid and other treatments in round 1.',
+      instance_id: 'log_3',
+      input: ['filter_2']
+    },
+
+    // Line 24
+    {
+      opal_metadata: {
+        classname: 'Logit2',
+        description: 'Performs Logit2 analysis on the input dataset.',
+        analytic_id: 'opals.logit2.Logit2.Logit2',
+        name: 'Logit2',
+        parameters: [
+          {
+            formula: '',
+            family: 'binomial',
+            clustered_rse: 'sessionnum,playerid'
+          }
+        ]
+      },
+      instance_name: 'Logit2',
+      description: 'Difference in cooperation between fluid and other treatments emerges over time.',
+      instance_id: 'log_4',
+      input: ['txt_ingest_cooperation_data']
+    },
+
+    //// LINE 30 ??????????????????????
+
+    // Line 31
+    {
+      opal_metadata: {
+        classname: 'Filter',
+        description: 'Filter columns of a matrix.',
+        analytic_id: 'opals.select-from-dataframe.SelectByCondition.SelectByCondition',
+        name: 'Filter',
+        parameters: [{
+          comparator: '>=',
+          colname: 'round_num',
+          value: "7"
+        }]
+      },
+      instance_name: 'Filter',
+      description: 'round_num>=7',
+      instance_id: 'filter_3',
+      input: ['txt_ingest_cooperation_data']
+    },
+
+    {
+      opal_metadata: {
+        classname: 'Logit2',
+        description: 'Performs Logit2 analysis on the input dataset.',
+        analytic_id: 'opals.logit2.Logit2.Logit2',
+        name: 'Logit2',
+        parameters: [
+          {
+            formula: 'decision0d1c ~ C(fluid_dummy)',
+            family: 'binomial',
+            clustered_rse: 'sessionnum,playerid'
+          }
+        ]
+      },
+      instance_name: 'Logit2',
+      description: 'Difference in cooperation between fluid and other treatments, rounds 7-11.',
+      instance_id: 'log_5',
+      input: ['filter_3']
+    },
+
+    // Line 33
+    {
+      opal_metadata: {
+        classname: 'Filter',
+        description: 'Filter columns of a matrix.',
+        analytic_id: 'opals.select-from-dataframe.SelectByCondition.SelectByCondition',
+        name: 'Filter',
+        parameters: [{
+          comparator: '>=',
+          colname: 'round_num',
+          value: "7"
+        }]
+      },
+      instance_name: 'Filter',
+      description: 'round_num>=7',
+      instance_id: 'filter_4',
+      input: ['txt_ingest_cooperation_data']
+    },
+
+    {
+      opal_metadata: {
+        classname: 'Logit2',
+        description: 'Performs Logit2 analysis on the input dataset.',
+        analytic_id: 'opals.logit2.Logit2.Logit2',
+        name: 'Logit2',
+        parameters: [
+          {
+            formula: '',
+            family: 'binomial',
+            clustered_rse: 'sessionnum,playerid'
+          }
+        ]
+      },
+      instance_name: 'Logit2',
+      description: 'Fluid vs other 3 combined.',
+      instance_id: 'log_6',
+      input: ['filter_4']
+    },
+
+    //// LINE 39 ??????????????????????
+
+    // Line 40
+    {
+      opal_metadata: {
+        classname: 'Logit2',
+        description: 'Performs Logit2 analysis on the input dataset.',
+        analytic_id: 'opals.logit2.Logit2.Logit2',
+        name: 'Logit2',
+        parameters: [
+          {
+            formula: "decision0d1c ~ C(condition, Treatment(reference='Random'))",
+            family: 'binomial',
+            clustered_rse: 'sessionnum,playerid'
+          }
+        ]
+      },
+      instance_name: 'Logit2',
+      description: 'No sig difference in cooperation between non-fluid treatments, all rounds, omit "Random".',
+      instance_id: 'log_7',
+      input: ['txt_ingest_cooperation_data']
+    },
+
+    //// LINE 41 ?????????????????????????
+
+    // Line 42
+    {
+      opal_metadata: {
+        classname: 'Logit2',
+        description: 'Performs Logit2 analysis on the input dataset.',
+        analytic_id: 'opals.logit2.Logit2.Logit2',
+        name: 'Logit2',
+        parameters: [
+          {
+            formula: "decision0d1c ~ C(condition, Treatment(reference='Static'))",
+            family: 'binomial',
+            clustered_rse: 'sessionnum,playerid'
+          }
+        ]
+      },
+      instance_name: 'Logit2',
+      description: 'No sig difference in cooperation between non-fluid treatments, all rounds, omit "Static".',
+      instance_id: 'log_8',
+      input: ['txt_ingest_cooperation_data']
+    },
+
+    //// LINE 44 ??????????????????????????????
+
+    // Line 45
+    {
+      opal_metadata: {
+        classname: 'Filter',
+        description: 'Filter columns of a matrix.',
+        analytic_id: 'opals.select-from-dataframe.SelectByCondition.SelectByCondition',
+        name: 'Filter',
+        parameters: [{
+          comparator: '>=',
+          colname: 'round_num',
+          value: "7"
+        }]
+      },
+      instance_name: 'Filter',
+      description: 'round_num>=7',
+      instance_id: 'filter_5',
+      input: ['txt_ingest_cooperation_data']
+    },
+
+    {
+      opal_metadata: {
+        classname: 'Logit2',
+        description: 'Performs Logit2 analysis on the input dataset.',
+        analytic_id: 'opals.logit2.Logit2.Logit2',
+        name: 'Logit2',
+        parameters: [
+          {
+            formula: "decision0d1c ~ C(condition, Treatment(reference='Random'))",
+            family: 'binomial',
+            clustered_rse: 'sessionnum,playerid'
+          }
+        ]
+      },
+      instance_name: 'Logit2',
+      description: 'No sig difference in cooperation between non-fluid treatments, rounds 7-11, omit "Random".',
+      instance_id: 'log_9',
+      input: ['filter_5']
+    },
+
+    //// LINE 46 ??????????????????????????
+
+    // Line 47
+    {
+      opal_metadata: {
+        classname: 'Filter',
+        description: 'Filter columns of a matrix.',
+        analytic_id: 'opals.select-from-dataframe.SelectByCondition.SelectByCondition',
+        name: 'Filter',
+        parameters: [{
+          comparator: '>=',
+          colname: 'round_num',
+          value: "7"
+        }]
+      },
+      instance_name: 'Filter',
+      description: 'round_num>=7',
+      instance_id: 'filter_6',
+      input: ['txt_ingest_cooperation_data']
+    },
+
+    {
+      opal_metadata: {
+        classname: 'Logit2',
+        description: 'Performs Logit2 analysis on the input dataset.',
+        analytic_id: 'opals.logit2.Logit2.Logit2',
+        name: 'Logit2',
+        parameters: [
+          {
+            formula: "decision0d1c ~ C(condition, Treatment(reference='Static'))",
+            family: 'binomial',
+            clustered_rse: 'sessionnum,playerid'
+          }
+        ]
+      },
+      instance_name: 'Logit2',
+      description: 'No sig difference in cooperation between non-fluid treatments, rounds 7-11, omit "Static".',
+      instance_id: 'log_10',
+      input: ['filter_6']
+    },
+
+    // Line 53
+    {
+      opal_metadata: {
+        classname: 'Filter',
+        description: 'Filter columns of a matrix.',
+        analytic_id: 'opals.select-from-dataframe.SelectByCondition.SelectByCondition',
+        name: 'Filter',
+        parameters: [{
+          comparator: '==',
+          colname: 'condition',
+          value: 'Fluid'
+        }]
+      },
+      instance_name: 'Filter',
+      description: 'condition=="Fluid"',
+      instance_id: 'filter_7',
+      input: ['txt_ingest_cooperation_data']
+    },
+
+    {
+      opal_metadata: {
+        classname: 'Logit2',
+        description: 'Performs Logit2 analysis on the input dataset.',
+        analytic_id: 'opals.logit2.Logit2.Logit2',
+        name: 'Logit2',
+        parameters: [
+          {
+            formula: 'decision0d1c ~ C(num_neighbors)',
+            family: 'binomial',
+            clustered_rse: 'sessionnum,playerid'
+          }
+        ]
+      },
+      instance_name: 'Logit2',
+      description: 'Cooperators have more connections than defectors in fluid condition.',
+      instance_id: 'log_11',
+      input: ['filter_7']
+    }
+  ]
+};
+
+
+export { cooperation_analysis_workflow };
