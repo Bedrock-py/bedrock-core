@@ -1,5 +1,9 @@
 #!/bin/bash
 
+ln -s "/opt/bedrock/conf/bedrock.conf" "/etc/apache2/sites-available/"
+cp /opt/bedrock/package/static/* /var/www/html/
+a2ensite bedrock
+
 pip install -e /opt/bedrock/package
 pip install git+https://github.com/Bedrock-py/opal-analytics-clustering.git@master#egg=opals-clustering
 pip install git+https://github.com/Bedrock-py/opal-analytics-classification.git@master#egg=opals-classification
