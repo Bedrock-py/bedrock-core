@@ -1,13 +1,4 @@
-#****************************************************************
-#  File: AnalyticsAPIv01.py
-#
-# Copyright (c) 2015, Georgia Tech Research Institute
-# All rights reserved.
-#
-# This unpublished material is the property of the Georgia Tech
-# Research Institute and is protected under copyright law.
-# The methods and techniques described herein are considered
-# trade secrets and/or confidential. Reprod*********************************************/
+
 from __future__ import print_function
 
 import json
