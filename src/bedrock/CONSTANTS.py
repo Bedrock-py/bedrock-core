@@ -3,9 +3,9 @@ MONGO_HOST = 'localhost'
 MONGO_PORT = 27017
 VIS_DB_NAME = 'visualization'
 VIS_COL_NAME = 'visualizations'
-MYSQL_HOST = 'localhost'
-MYSQL_USER = 'otc'
-MYSQL_PASSWORD = 'offshore2015'
+MYSQL_HOST = ''
+MYSQL_USER = ''
+MYSQL_PASSWORD = ''
 
 DATALOADER_DB_NAME = 'dataloader'
 DATALOADER_COL_NAME = 'sources'

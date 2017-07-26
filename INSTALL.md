@@ -38,4 +38,14 @@ docker run -p 81:81 -d bedrock
 ```
 
 ## Step 5: Test your Installation
-Assuming no errors, you should be able to view the APIs at http://localhost:81/
+Assuming no errors, you should be able to view the APIs at http://localhost:81/ . The automated Python tests can be run from the `bedrock-core` directory by simply executing `pytest`.
+
+
+## Step 6: Install Additional Analytics Packages
+
+The default installation includes only a select few packages. We'll install two more with the following commands:
+
+```
+./bin/docker_install_opal.sh -g https://github.com/Bedrock-py/opal-analytics-logit2.git $ID
+./bin/docker_install_opal.sh -g https://github.com/Bedrock-py/opal-analytics-summarize.git $ID
+```
