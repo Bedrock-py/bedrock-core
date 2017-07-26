@@ -267,16 +267,30 @@ class Sources(Resource):
             client = db_client()
             col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
 
-            # Check for an existing source with the same name.  For now do not overwrite
+            # If group_name == 'overwrite' then overwrite with same src_id
+            overwrite = False
+            if group_name == 'overwrite':
+                group_name = ""
+                overwrite = True
+
+            # Check for an existing source with the same name. Do not overwrite unless specified
             existing_source = find_source(col, name)
-            if existing_source:
+            if existing_source is not None and not overwrite:
                 logging.warn("Source Already Exists: {}".format(existing_source['src_id']))
                 existing_source['error'] = 1
                 existing_source['msg'] = "Source Already Exists"
                 return existing_source
 
             try:
-                src_id = utils.getNewId()
+                if existing_source:
+                    src_id = existing_source['src_id']
+                    if overwrite:
+                        col.delete_one({"src_id":src_id})
+                        file_path = '/'.join([DATALOADER_PATH,src_id])
+                        shutil.rmtree(file_path)
+                else:
+                    src_id = utils.getNewId()
+
                 t = utils.getCurrentTime()
                 conn_info = request.get_json()
                 # conn_info = request.get_json(force=True)

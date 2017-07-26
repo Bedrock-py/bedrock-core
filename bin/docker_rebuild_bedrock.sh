@@ -4,13 +4,13 @@
 # $ID 		- ID of the running Bedrock Docker container
 # $BEDROCK_ROOT 	- Root directory for Bedrock
 # $ID is populated if docker is started with this command from the bedrock-core directory:
-#		docker build -t bedrock . && ID=$(docker run -p 81:81 -p 82:82 -d bedrock)
+#		docker build -t bedrock . && ID=$(docker run -p 81:81 -d bedrock)
 
 display_usage() {
-	echo -e "\tdocker_install_opal.sh is used to install an opal in a running docker container"
-	echo -e "\tUsage: docker_install_opal.sh ID PACKAGE"
+	echo -e "\tdocker_rebuild_bedrock.sh is used to reinstall bedrock in a running docker container"
+	echo -e "\tUsage: tdocker_rebuild_bedrock.sh ID PACKAGE"
 	echo -e "\t\tID - ID of the running Bedrock Docker container"
-	echo -e "\t\tPACKAGE - Name of the package to run. \$PACKAGE.tar.gz should exist in the current directory \n"
+	echo -e "\t\BEDROCK_ROOT - Root directory for Bedrock on the current host \n"
 	}
 
 # if less than two arguments supplied, display usage
