@@ -1,13 +1,4 @@
-#****************************************************************
-#  File: AnalyticsAPIv01.py
-#
-# Copyright (c) 2015, Georgia Tech Research Institute
-# All rights reserved.
-#
-# This unpublished material is the property of the Georgia Tech
-# Research Institute and is protected under copyright law.
-# The methods and techniques described herein are considered
-# trade secrets and/or confidential. Reprod*********************************************/
+
 from __future__ import print_function
 
 import json
@@ -36,7 +27,7 @@ import logging
 
 import utils
 from bedrock.CONSTANTS import MONGO_HOST, MONGO_PORT, ANALYTICS_DB_NAME, ANALYTICS_COL_NAME, ANALYTICS_OPALS
-from bedrock.core.db import drop_id_key, db_client
+from bedrock.core.db import drop_id_key, serialize_id_key, db_client
 from bedrock.CONSTANTS import RESULTS_COL_NAME, RESULTS_PATH
 from bedrock.core.exceptions import asserttype, InvalidUsage
 import bedrock.client.workflow as flow
@@ -70,27 +61,61 @@ def teardown_db(exception):
         db.close()
 ###################################################################################################
 
+def newresp(req, uid):
+    """Creates a new json for the response body that you can add to."""
+    resp = {'method':req.method, 'mesg':'', 'uid':uid}
+    return resp
+
 @api.route('/<uid>')
 class Flow(Resource):
     """The main endpoint for the url service"""
     def get(self, uid):
+        """
+        Get a workflow from the backing database (mongo), special uid=='all' returns
+        the whole list. the workflow will be stored in the response as a json at the key workflow.
+        If you ask for 'all' then there will be a field 'workflows' containing an array of workflows.
+        """
         print('flow called')
-        resp = {'method':request.method, 'mesg':'','uid':uid}
         client = db_client()[flowdb][flowcol]
-        try:
-            resp['workflow'] = drop_id_key(client.find({'_id':ObjectId(uid)})[0])
-        except IndexError:
-            return 'No such object %s'%uid, 404
-        if request.method == 'DELETE':
-            resp['mesg'] = 'Removing %s'%uid
+        resp = newresp(request, uid)
+        if uid == 'all':
+            try:
+                resp['workflows'] = map(serialize_id_key, client.find())
+            except Exception as ex:
+                print(ex)
+                return "failed builk read to mongo", 500
+        else:
+            try:
+                resp['workflow'] = serialize_id_key(client.find({'_id':ObjectId(uid)})[0])
+            except IndexError:
+                return 'No such object %s'%uid, 404
         resp['mesg'] = "You asked for %s" % uid
         return resp
-    def put(self, uid):
-        resp = {'method':request.method, 'mesg':'','uid':uid}
+    def post(self, uid):
+        """Store a new workflow in the database. returns the uid which is the mongo objectid"""
+        resp = newresp(request, uid)
         client = db_client()
         body = request.get_json()
-        res = client.flows.flows.insert_one(body)
-        if request.method == 'POST':
-            resp['mesg'] ='You told me to post %s'%uid
-            data = request.get_json()
-        return str(res.inserted_id)
+        try:
+            res = client.flows.flows.insert_one(body)
+            resp['mesg'] = 'Succesfully inserted workflow'
+            resp['_id'] = str(res.inserted_id)
+            return resp, 201
+        except Exception as ex:
+            resp['mesg'] = 'Could not create workflow %s:\n %s'%(uid, ex)
+            return resp, 500
+        return resp, 201
+    def delete(self, uid):
+        resp = newresp(request, uid)
+        client = db_client()
+        body = request.get_json()
+        resp['mesg'] = 'Removing %s'%uid
+        try:
+            client.flows.flows.remove({'_id': ObjectId(uid)})
+        except Exception as ex:
+            print("exception in deletion of workflow:\n", ex)
+            resp['error'] = "failed to delete %s\n%s" % (uid, ex )
+            return resp, 500
+        return resp, 200
+        
+

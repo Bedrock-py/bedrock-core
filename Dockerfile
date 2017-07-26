@@ -2,8 +2,8 @@ FROM bedrockgtri/bedrockserver:latest
 
 MAINTAINER "James Fairbanks" <james.fairbanks@gtri.gatech.edu>
 
-ADD bin/install_opals.sh    /opt/bedrock/bin/install_opals.sh
 ADD .                       /opt/bedrock/package
+ADD bin/install_opals.sh    /opt/bedrock/bin/install_opals.sh
 
 RUN service mongod start && /opt/bedrock/bin/install_opals.sh
 
