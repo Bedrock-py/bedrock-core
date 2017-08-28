@@ -111,7 +111,8 @@ class Flow(Resource):
         body = request.get_json()
         resp['mesg'] = 'Removing %s'%uid
         try:
-            client.flows.flows.remove({'_id': ObjectId(uid)})
+            res = client.flows.flows.remove({'_id': ObjectId(uid)})
+            print(res)
         except Exception as ex:
             print("exception in deletion of workflow:\n", ex)
             resp['error'] = "failed to delete %s\n%s" % (uid, ex )
