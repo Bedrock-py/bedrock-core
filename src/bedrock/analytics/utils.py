@@ -266,11 +266,8 @@ class Algorithm(object):
             if key.endswith('.json'):
                 featuresFile.write(outputData)
             elif key.endswith('.txt'):
-                if (key == 'summary.txt') | (key == 'prior_summary.txt'):
-                    featuresFile.write(outputData)
-                else:
-                    line = '\n'.join([str(x) for x in outputData]) + '\n'
-                    featuresFile.write(line)
+                line = '\n'.join([str(x) for x in outputData]) + '\n'
+                featuresFile.write(line)
             elif 'analytic' in key:
                 write_analytic(outputData['text'], outputData['classname'])
             else:
