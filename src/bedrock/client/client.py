@@ -110,6 +110,7 @@ class BedrockAPI(object):
         url = self.endpoint("analytics", "results/%s/%s/download/%s/%s" % (src_id, result_id, remote_filename, local_filename))
         resp = requests.get(url)
 
+        logging.error(remote_filename)
         if remote_filename.endswith(".csv"):
             try:
                 from StringIO import StringIO
@@ -126,8 +127,17 @@ class BedrockAPI(object):
                 headers = pandas.read_csv(StringIO(resp.text), header=-1, quotechar='"', skipinitialspace=True)
 
                 mtx.columns = headers.T.values[0]
+        elif remote_filename.endswith(".txt"):
+            try:
+                from StringIO import StringIO
+            except Exception:
+                from io import StringIO
+
+            logging.error("Repsonding with txt")
+            logging.error(resp.text)
+            mtx = resp.text
         else:
-            logging.error("Unknown remote file format")
+            logging.error("Unknown remote file format2")
             return None
 
         return mtx
