@@ -1,6 +1,8 @@
 """
     Utility functions for bedrock
 """
+
+
 def get_class(classname):
     modulename = classname.rpartition(".")[0]
     import importlib

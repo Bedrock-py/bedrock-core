@@ -66,13 +66,13 @@ class BedrockAPI(object):
         return requests.get(
             self.endpoint("visualization", "visualization/%s" % viz_id))
 
-    def put_source(self, name, ingest_id, group_name, payload):
+    def put_source(self, name, ingest_id, group_name, payload, json={}):
         """Payload can be either a file or JSON structured configuration data.
         Returns the metadata for the new source."""
         endpoint = self.endpoint("dataloader", "sources/%s/%s/%s" %
                                  (name, ingest_id, group_name))
         logging.info('putting source to: %s', endpoint)
-        return requests.put(endpoint, files=payload)
+        return requests.put(endpoint, files=payload, json=json)
 
     def explore_source(self, src_id):
         """ Returns the payload for exploring a source for its schema """
