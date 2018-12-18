@@ -1,29 +1,32 @@
-
-
 import os, multiprocessing
 import numpy as np
 import json
 import uuid
 from datetime import datetime
 import pymongo
-from bedrock.CONSTANTS import MONGO_HOST, MONGO_PORT, DATALOADER_COL_NAME, DATALOADER_DB_NAME, DATALOADER_PATH
+from bedrock.CONSTANTS import MONGO_HOST, MONGO_PORT, DATALOADER_COL_NAME, DATALOADER_DB_NAME, \
+    DATALOADER_PATH
 from bedrock.core.utils import get_class
 import sys
 import traceback
 
+
 def explore(ingest_id, filepath, filters):
-    mod = get_class(ingest_id) #create the object specified
+    mod = get_class(ingest_id)  # create the object specified
     mod.initialize_filters(filters)
     return mod.explore(filepath)
 
-def custom(ingest_id, filepath, param1=None, param2=None, param3=None, payload=None, request={}):
-    mod = get_class(ingest_id)
-    return mod.custom(filepath, param1=param1, param2=param2, param3=param3, payload=payload, request=request)
+
+def custom(**kwargs):
+    mod = get_class(kwargs["ingest_id"])
+    return mod.custom(**kwargs)
+
 
 def initialize(filter, parameters):
-    #options can be specific and unique for each filter
+    # options can be specific and unique for each filter
     for each in parameters:
         setattr(filter, each['attrname'], each['value'])
+
 
 def get_metadata(id, api="ingest"):
     if api == 'ingest':
@@ -54,96 +57,109 @@ def ingest(posted_data, src):
     mod = get_class(src['ingest_id'])
     return mod.ingest(posted_data, src)
 
+
 def delete(src):
     mod = get_class(src['ingest_id'])
     return mod.delete(src['rootdir'])
 
-def stream(ingest_id, filepath):#update for function
+
+def stream(ingest_id, filepath):  # update for function
     mod = get_class(ingest_id)
     multiprocessing.Process(target=mod.stream, args=[filepath]).start()
     return
 
     # mod.stream(filepath)
 
-def update(ingest_id, filepath):#update for function
+
+def update(ingest_id, filepath):  # update for function
     mod = get_class(ingest_id)
     return mod.update(filepath)
+
 
 def get_status(src_id, client=None):
     if not client:
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
     col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
-        status = col.find({'src_id':src_id})[0]['status']
+        status = col.find({'src_id': src_id})[0]['status']
         return status
     except IndexError:
         return False
+
 
 def update_status(src_id, client=None):
     if not client:
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
     col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
-        status = col.find({'src_id':src_id})[0]['status']
-        col.update({'src_id':src_id}, {'$set':{'status': not status}})
+        status = col.find({'src_id': src_id})[0]['status']
+        col.update({'src_id': src_id}, {'$set': {'status': not status}})
 
     except IndexError:
         pass
+
 
 def get_count(src_id, client=None):
     if not client:
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
     col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
-        count = col.find({'src_id':src_id})[0]['count']
+        count = col.find({'src_id': src_id})[0]['count']
         return count
     except IndexError:
         return 0
+
 
 def increment_count(src_id, client=None):
     if not client:
         client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
     col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
-        count = col.find({'src_id':src_id})[0]['count']
-        col.update({'src_id':src_id}, {'$set':{'count': count+1}})
-        return count+1
+        count = col.find({'src_id': src_id})[0]['count']
+        col.update({'src_id': src_id}, {'$set': {'count': count + 1}})
+        return count + 1
 
     except IndexError:
         return 0
+
 
 def get_stash(src_id):
     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
     col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
-        vis = col.find({'src_id':src_id})[0]['stash']
+        vis = col.find({'src_id': src_id})[0]['stash']
         return vis
     except IndexError:
         return []
+
 
 def set_stash(src_id, new):
     client = pymongo.MongoClient(MONGO_HOST, MONGO_PORT)
     col = client[DATALOADER_DB_NAME][DATALOADER_COL_NAME]
     try:
-        vis = col.find({'src_id':src_id})[0]['stash']
-        col.update({'src_id':src_id}, { '$set': {'stash': new} })
+        vis = col.find({'src_id': src_id})[0]['stash']
+        col.update({'src_id': src_id}, {'$set': {'stash': new}})
 
     except IndexError:
         pass
 
+
 def getNewId():
     return uuid.uuid4().hex
+
 
 def getCurrentTime():
     return str(datetime.now())
 
-#get a unique folder name and create the folder, return the filepath
+
+# get a unique folder name and create the folder, return the filepath
 def setUpDirectory():
     dirName = uuid.uuid4().hex
     # dirName = datetime.now().strftime("%Y%m%d%H%M%S%f")
     rootpath = DIRPATH + dirName + '/'
     os.makedirs(rootpath, 777)
     return DIRPATH, dirName
+
 
 def setUpDirectoryMatrix(src_id):
     dirName = uuid.uuid4().hex
@@ -152,18 +168,19 @@ def setUpDirectoryMatrix(src_id):
     os.makedirs(rootpath, 777)
     return rootpath, dirName
 
+
 def extractSchemaFromListOfJSON(samples):
-    #initialize return list
+    # initialize return list
     schema = []
-    #extract the field names
+    # extract the field names
     fields = [x for x in samples[0].keys()]
-    #for each field
+    # for each field
     for i in range(len(fields)):
         # represents a single column/field
         field = {}
         examples = []
         for j in range(len(samples)):
-            #possible for a particular sample to have nonstandard fields
+            # possible for a particular sample to have nonstandard fields
             try:
                 val = samples[j][fields[i]]
             except KeyError:
@@ -174,19 +191,19 @@ def extractSchemaFromListOfJSON(samples):
             float(examples[0])
             field['type'] = ['Numeric']
         # must be string
-        except (ValueError,TypeError):
+        except (ValueError, TypeError):
             field['type'] = ['String']
 
-        #give it a label
+        # give it a label
         field['key'] = field['key_usr'] = fields[i]
-        #set the examples
+        # set the examples
         field['examples'] = examples
-        #set a fake range
-        field['range'] = [-1,-1]
-        #set some suggestions
+        # set a fake range
+        field['range'] = [-1, -1]
+        # set some suggestions
         field['suggestions'] = field['options'] = self.get_filters(field['type'][0])
         field['suggestion'] = self.get_best_filter(field['type'][0], fields[i], examples[0])
-        #add to schema, then repeat for next column
+        # add to schema, then repeat for next column
         schema.append(field)
         return schema
 
@@ -195,10 +212,12 @@ def check(filter_id, name, col):
     filt = get_class(filter_id)
     return filt.check(name, col)
 
+
 def apply(filter_id, parameters, col):
     filt = get_class(filter_id)
     initialize(filt, parameters)
     return filt.apply(col)
+
 
 class Filter(object):
     def __init__(self):
@@ -228,6 +247,7 @@ class Filter(object):
     def get_possible_names(self):
         return self.possible_names
 
+
 class Ingest(object):
     def __init__(self):
         pass
@@ -241,7 +261,6 @@ class Ingest(object):
             data = json.loads(json_data.read())
         for each in data:
             setattr(self, each['attrname'], each['value'])
-
 
     def explore(self, filepath):
         return {}, 200
@@ -263,9 +282,9 @@ class Ingest(object):
                 self.num_filters.append(filt['name'])
                 self.num_filters_id.append(filt['filter_id'])
 
-        #print self.string_filters
-            # elif filt['input'] == 'Float':
-            #     self.float_filters.append({key: value for key, value in filt.items() if key != '_id'})
+        # print self.string_filters
+        # elif filt['input'] == 'Float':
+        #     self.float_filters.append({key: value for key, value in filt.items() if key != '_id'})
 
     def apply_before_filters(self, posted_data, src, additional_params={}):
         matrices = []
@@ -277,8 +296,8 @@ class Ingest(object):
                 for each in data:
                     conf[each['attrname']] = each['value']
         except:
-            pass # must not be a config file
-        for key,value in additional_params.iteritems():
+            pass  # must not be a config file
+        for key, value in additional_params.items():
             conf[key] = value
 
         try:
@@ -290,14 +309,14 @@ class Ingest(object):
             if len(filt) > 0:
                 if filt['stage'] == 'before':
                     if filt['type'] == 'extract':
-                        #create new matrix metadata
+                        # create new matrix metadata
                         conf['mat_id'] = getNewId()
                         conf['storepath'] = src['rootdir'] + conf['mat_id'] + '/'
                         conf['src_id'] = src['src_id']
                         conf['name'] = posted_data['matrixName']
                         val = self.apply_filter(filt['filter_id'], filt['parameters'], conf)
                         if val != None:
-                            matrices.append( val )
+                            matrices.append(val)
                         matrixFilters.pop(field, None)
                     elif filt['type'] == 'convert':
                         pass
@@ -340,16 +359,17 @@ class Ingest(object):
                         if isinstance(maps[feature], list):
                             additions.extend(filt.apply_filter(maps[feature]))
                         else:
-                            additions.extend(filt.apply_filter(maps[feature]['indexToLabel'], values=maps[feature]['values']))
+                            additions.extend \
+                                (filt.apply_filter(maps[feature]['indexToLabel'], values=maps[feature]['values']))
 
                     elif filt_type == 'ConvertFilter':
                         if isinstance(maps[feature], list):
                             maps[feature], matrixTypes[i] = filt.apply_filter(maps[feature])
                         else:
-                            maps[feature]['indexToLabel'], matrixTypes[i] = filt.apply_filter(maps[feature]['indexToLabel']) #think through this...
+                            maps[feature]['indexToLabel'], matrixTypes[i] = filt.apply_filter \
+                                (maps[feature]['indexToLabel'])  # think through this...
         # if any features were added via filters, process them now
         processAdditions(maps, additions, matrixFeatures)
-
 
     def get_filters(self, type_name):
         if type_name == 'String':

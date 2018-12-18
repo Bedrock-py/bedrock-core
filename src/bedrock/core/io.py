@@ -5,6 +5,7 @@ import os
 import json
 from bedrock.CONSTANTS import *
 import werkzeug
+import requests
 
 DIRMASK = 0o775
 
@@ -18,6 +19,34 @@ def write_source_file(dataloader_path, src_id, uploadedfile):
     filepath = os.path.join(rootpath, filename)
     uploadedfile.save(filepath)
     return rootpath, filepath
+
+
+def write_source_files_web(dataloader_path, src_id, names_urls):
+    """Writes multiple files downloaded from a web source"""
+
+    rootpath = os.path.join(dataloader_path, src_id, 'source/')
+    if not os.path.exists(rootpath):
+        os.makedirs(rootpath, DIRMASK)
+
+    filepaths = []
+    for name, url in names_urls:
+        filepath, local_filename = download_file(rootpath, name, url)
+        filepaths.append(filepath)
+
+    return rootpath, filepaths
+
+
+def download_file(rootpath, name, url):
+    local_filename = name
+    r = requests.get(url, stream=True)
+    filepath = rootpath + local_filename
+    with open(filepath, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=1024):
+            if chunk:  # filter out keep-alive new chunks
+                f.write(chunk)
+                # f.flush()
+    r.close()
+    return filepath, local_filename
 
 
 def write_source_config(dataloader_path, src_id, conn_info):

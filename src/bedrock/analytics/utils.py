@@ -1,4 +1,3 @@
-
 from __future__ import print_function
 
 import csv
@@ -21,6 +20,7 @@ def getNewId():
 
 def getCurrentTime():
     return str(datetime.now())
+
 
 def setUpDirectory():
     """get a unique folder name and create the folder, return the filepath"""
@@ -65,41 +65,41 @@ def writeFiles(maps,
     write the output files associated with each loaded file
     matrix.csv, features.txt, features_original.txt, and any non-numeric fields' mappings
     """
-    #make directory
+    # make directory
     if not os.path.exists(rootpath):
         os.makedirs(rootpath)
 
-    #write output files
+    # write output files
     toWrite = []
-    #list of features to write to the output features.txt file
+    # list of features to write to the output features.txt file
     features = []
     featuresOrig = []
 
-    #determine if a feature is numeric or has a label mapping
+    # determine if a feature is numeric or has a label mapping
     for i, each in enumerate(matrixFeatures):
         # for each in maps.keys():
         if isinstance(maps[each], list):
             toWrite.append(maps[each])
-        #since the feature has a label mapping, write out the label values in order for later reference
-        #filename is the feature name + .txt
+        # since the feature has a label mapping, write out the label values in order for later reference
+        # filename is the feature name + .txt
         else:
             try:
                 toWrite.append([str(x) for x in maps[each]['values']])
             except KeyError:
-                pass    #ignore, since this is the mongoids field and has no values
-            #write the features to output
+                pass  # ignore, since this is the mongoids field and has no values
+            # write the features to output
             writeOutput(rootpath, each, maps[each]['indexToLabel'])
-        if matrixFeaturesOriginal[i] != '_id':    #don't do this for mongoids
+        if matrixFeaturesOriginal[i] != '_id':  # don't do this for mongoids
             features.append(each)
             featuresOrig.append(matrixFeaturesOriginal[i])
 
-    #write out the list of features
+    # write out the list of features
     writeOutput(rootpath, 'features_original', featuresOrig)
     writeOutput(rootpath, 'features', features)
 
     toReturn = []
-    #convert lists to numpy arrays
-    #matrix is documents x features (i.e. rows = individual items and columns = features)
+    # convert lists to numpy arrays
+    # matrix is documents x features (i.e. rows = individual items and columns = features)
     with open(os.path.join(rootpath, 'matrix.csv'), 'w') as matrix:
         for i in range(len(toWrite[0])):
             temp = []
@@ -118,28 +118,27 @@ def updateFiles(maps,
                 matrixFeaturesOriginal,
                 rootpath,
                 return_data=False):
-
-    #write output files
+    # write output files
     toWrite = []
 
-    #determine if a feature is numeric or has a label mapping
+    # determine if a feature is numeric or has a label mapping
     for i, each in enumerate(matrixFeatures):
         # for each in maps.keys():
         if isinstance(maps[each], list):
             toWrite.append(maps[each])
-        #since the feature has a label mapping, write out the label values in order for later reference
-        #filename is the feature name + .txt
+        # since the feature has a label mapping, write out the label values in order for later reference
+        # filename is the feature name + .txt
         else:
             try:
                 toWrite.append([str(x) for x in maps[each]['values']])
             except KeyError:
-                pass    #ignore, since this is the mongoids field and has no values
-            #write the features to output
+                pass  # ignore, since this is the mongoids field and has no values
+            # write the features to output
             appendOutput(rootpath, each, maps[each]['indexToLabel'])
 
     toReturn = []
-    #convert lists to numpy arrays
-    #matrix is documents x features (i.e. rows = individual items and columns = features)
+    # convert lists to numpy arrays
+    # matrix is documents x features (i.e. rows = individual items and columns = features)
     with open(os.path.join(rootpath, 'matrix.csv'), 'a') as matrix:
         for i in range(len(toWrite[0])):
             temp = []
@@ -154,7 +153,7 @@ def updateFiles(maps,
 
 
 def initialize(alg, parameters):
-    #options can be specific and unique for each algorithm
+    # options can be specific and unique for each algorithm
     for each in parameters:
         setattr(alg, each['attrname'], each['value'])
 
@@ -170,6 +169,11 @@ def get_metadata(analytic_id):
     metadata['outputs'] = alg.get_outputs()
     metadata['type'] = alg.get_type()
     return metadata
+
+
+def run_algorithm_custom(analytic_id, **kwargs):
+    alg = get_class(analytic_id)
+    alg.custom(**kwargs)
 
 
 def run_analysis(queue, analytic_id, parameters, inputs, storepath, name):
@@ -201,7 +205,7 @@ def classify(analytic_id, parameters, inputs):
         return []
 
 
-#runs simple dense matrix test
+# runs simple dense matrix test
 def test_analysis(analytic_id, filepath, storepath):
     '''test_analysis: run the analytics on the matrix stored at filepath and put results in storepath.
     returns True if the analytic does not raise an exception when compute or write_results is called.
@@ -222,6 +226,7 @@ def test_analysis(analytic_id, filepath, storepath):
     else:
         return False
 
+
 # BROKEN: WONTFIX
 def write_analytic(text, classname):
     time = datetime.now()
@@ -231,7 +236,7 @@ def write_analytic(text, classname):
     with open(ANALYTICS_OPALS + analytic_id + '.py', 'w') as alg:
         alg.write(text)
 
-    #get the metadata from the file
+    # get the metadata from the file
     metadata = get_metadata(analytic_id)
     metadata['analytic_id'] = analytic_id
 
@@ -246,10 +251,10 @@ class Algorithm(object):
         self.results = {}
 
     def check_parameters(self):
-        #check to make sure inputs are set
+        # check to make sure inputs are set
         try:
             for each in self.parameters:
-                getattr(self,each)
+                getattr(self, each)
             return True
         except AttributeError:
             logging.error('Necessary attribute(s) not initialized')
@@ -271,7 +276,7 @@ class Algorithm(object):
             elif 'analytic' in key:
                 write_analytic(outputData['text'], outputData['classname'])
             else:
-                #check if each element is a single element or list
+                # check if each element is a single element or list
                 if len(outputData) == 0:
                     return
                 try:
@@ -285,7 +290,7 @@ class Algorithm(object):
                         line = '\n'.join([str(x) for x in outputData])
                         featuresFile.write(line)
                 else:
-                    #list
+                    # list
                     if key.endswith('.csv'):
                         for element in outputData:
                             line = ','.join(['"' + str(x) + '"' for x in element])
@@ -314,5 +319,8 @@ class Algorithm(object):
     def get_outputs(self):
         return self.outputs
 
-    def compute(self):
+    def compute(self, filepath, **kwargs):
+        pass
+
+    def custom(self, **kwargs):
         pass

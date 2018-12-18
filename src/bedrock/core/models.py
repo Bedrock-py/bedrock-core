@@ -29,8 +29,12 @@ class Source(Storable):
                  ingest_id, group_name, matrices=None,
                  status=None, count=0, stash=None, filepath=None):
         self.name = name
-        self.host = [ip for ip in socket.gethostbyname_ex(socket.gethostname())[2]
-                     if not ip.startswith("127.")][-1]
+        potential_host_ips = socket.gethostbyname_ex(socket.gethostname())[2]
+        if len(potential_host_ips) > 1:
+            self.host = [ip for ip in potential_host_ips
+                         if not ip.startswith("127.")][-1]
+        else:
+            self.host = "127.0.0.1"
         self.rootdir = rootdir
         self.src_id = src_id
         self.src_type = src_type
@@ -42,3 +46,27 @@ class Source(Storable):
         self.stash = none2empty(stash)
         self.group_name = group_name
         self.filepath = filepath
+
+
+class SourceFolder(Storable):
+    """A class for representing a bedrock folder of sources (i.e. multiple files used together as a set)."""
+    def __init__(self, name, rootdir, src_id, src_type, time,
+                 ingest_id, group_name, matrices=None,
+                 status=None, count=0, stash=None):
+        self.name = name
+        potential_host_ips = socket.gethostbyname_ex(socket.gethostname())[2]
+        if len(potential_host_ips) > 1:
+            self.host = [ip for ip in potential_host_ips
+                         if not ip.startswith("127.")][-1]
+        else:
+            self.host = "127.0.0.1"
+        self.rootdir = rootdir
+        self.src_id = src_id
+        self.src_type = src_type
+        self.created = time
+        self.ingest_id = ingest_id
+        self.matrices = none2empty(matrices)
+        self.status = none2empty(status)
+        self.count = count
+        self.stash = none2empty(stash)
+        self.group_name = group_name

@@ -121,7 +121,7 @@ class Options(Resource):
         outputsPersist.append('names')
 
         for vis in cur:
-            print vis
+            print(vis)
             contains = False
             outputs = outputsPersist[:]
             for i in vis['inputs']:
