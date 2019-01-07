@@ -1,4 +1,3 @@
-
 from __future__ import print_function
 
 import json
@@ -20,12 +19,13 @@ from flask import (Flask, Response, abort, g, jsonify, redirect, request,
                    send_from_directory, stream_with_context, url_for)
 import flask_restful as restful
 from flask_restplus import Api, Resource, fields
-from werkzeug import secure_filename
+from werkzeug.utils import secure_filename
 import logging
 
-import utils
-from bedrock.CONSTANTS import MONGO_HOST, MONGO_PORT, ANALYTICS_DB_NAME, ANALYTICS_COL_NAME, ANALYTICS_OPALS
-from bedrock.core.db import drop_id_key
+from . import utils
+from bedrock.CONSTANTS import MONGO_HOST, MONGO_PORT, ANALYTICS_DB_NAME, ANALYTICS_COL_NAME, ANALYTICS_OPALS, \
+    DATALOADER_DB_NAME, DATALOADER_COL_NAME
+from bedrock.core.db import drop_id_key, db_client, db_collection, find_source
 from bedrock.CONSTANTS import RESULTS_COL_NAME, RESULTS_PATH
 from bedrock.core.exceptions import asserttype, InvalidUsage
 
@@ -34,11 +34,13 @@ ALLOWED_EXTENSIONS = ['py']
 app = Flask(__name__)
 app.debug = True
 
+
 @app.errorhandler(InvalidUsage)
 def handle_invalid_usage(error):
     response = jsonify(error.to_dict())
     response.status_code = error.status_code
     return response
+
 
 api = Api(
     app,
@@ -59,23 +61,26 @@ def analytics_oftype(typename):
     usage: analytics_oftype('Clustering')
     '''
     _, col = analytics_collection()
-    analytics = col.find({"type":typename},{"_id":0})
+    analytics = col.find({"type": typename}, {"_id": 0})
 
     return list(analytics)
+
 
 def published_model(src):
     """predicate for an analytic being a published model"""
     return src['type'] == 'Model' and 'published' in src and src['published']
 
+
 def ismodel(src):
     """predict if the argument is a model"""
     return src['type'] == 'Model'
 
+
 def analytics_list(col):
     """gets the list of analytics including published models"""
-    cur = col.find({},{"_id":0})
+    cur = col.find({}, {"_id": 0})
     return [src for src in cur
-                     if published_model(src) or src['type'] != 'Model']
+            if published_model(src) or src['type'] != 'Model']
 
 
 def analytics_collection():
@@ -85,6 +90,7 @@ def analytics_collection():
         db = g._mongodb = MongoClient(MONGO_HOST, MONGO_PORT)
     return db, db[ANALYTICS_DB_NAME][ANALYTICS_COL_NAME]
 
+
 def results_collection():
     """connect to the database if necessary and return the analytics collection"""
     db = getattr(g, '_mongodb', None)
@@ -92,13 +98,15 @@ def results_collection():
         db = g._mongodb = MongoClient(MONGO_HOST, MONGO_PORT)
     return db, db[ANALYTICS_DB_NAME][RESULTS_COL_NAME]
 
+
 def get_results_source(src_id):
     _, col = results_collection()
-    res = col.find_one({'src_id': src_id}, {"_id":0})
+    res = col.find_one({'src_id': src_id}, {"_id": 0})
     if not res:
-        res = col.find_one({'src.name': src_id}, {"_id":0})
+        res = col.find_one({'src.name': src_id}, {"_id": 0})
 
     return res
+
 
 @app.teardown_appcontext
 def teardown_db(exception):
@@ -106,6 +114,8 @@ def teardown_db(exception):
     db = getattr(g, '_mongodb', None)
     if db is not None:
         db.close()
+
+
 ###################################################################################################
 
 
@@ -171,7 +181,7 @@ api.model(
         'classname': fields.String(
             description='Classname within the python file', required=True),
         'description':
-        fields.String(description='Description for the analytic'),
+            fields.String(description='Description for the analytic'),
         'inputs': fields.List(
             fields.String,
             description='List of input files for the analytic',
@@ -234,10 +244,11 @@ api.model(
         'rootdir': fields.String(
             description='Path to the associated directory', required=True),
         'src':
-        Matrix(description='Matrix from which these results were generated'),
+            Matrix(description='Matrix from which these results were generated'),
         'src_id': fields.String(
             description='Unique ID for the matrix', required=True),
     })
+
 
 ###################################################################################################
 
@@ -267,18 +278,18 @@ class Analytics(Resource):
             # make the id more meaningful
             file = request.files['file']
             filename = secure_filename(file.filename)
-            name,  ext = splitext(filename)
+            name, ext = splitext(filename)
             if not ext in ALLOWED_EXTENSIONS:
                 return 'This filetype is not supported.', 415
 
-            #save the file
+            # save the file
             analytic_id = name + str(time.year) + str(time.month) + str(
                 time.day) + str(time.hour) + str(time.minute) + str(
-                    time.second)
+                time.second)
             filepath = ANALYTICS_OPALS + analytic_id + '.py'
             file.save(filepath)
 
-            #get the metadata from the file
+            # get the metadata from the file
             metadata = utils.get_metadata(analytic_id)
             metadata['analytic_id'] = analytic_id
 
@@ -338,7 +349,7 @@ class Analytics(Resource):
             body='Matrix',
             params={
                 'payload':
-                '''Must be a list of the model described to the right. Try this:
+                    '''Must be a list of the model described to the right. Try this:
             [{
               "created": "string",
               "id": "string",
@@ -362,7 +373,7 @@ class Analytics(Resource):
             asserttype(data, list)
 
             _, col = analytics_collection()
-            cur = col.find({},{"_id":0})
+            cur = col.find({}, {"_id": 0})
             analytics = []
             if len(data) != 1:
                 outputsPersist = []
@@ -384,7 +395,7 @@ class Analytics(Resource):
                 if contains:
                     response = src
                     if published_model(response) or response['type'] != 'Model':
-                            analytics.append(response)
+                        analytics.append(response)
             return analytics
 
     @ns_a.route('/clustering/')
@@ -436,7 +447,7 @@ class Analytics(Resource):
             All analytics registered in the system with a type of 'Model' will be returned. If you believe there is an analytic that exists in the system but is not present here, it is probably not registered in the MongoDB database.
             '''
             _, col = analytics_collection()
-            cur = col.find({},{"_id":0})
+            cur = col.find({}, {"_id": 0})
             return [src for src in cur if ismodel(src)]
 
     @ns_a.route('/models/published/')
@@ -447,7 +458,7 @@ class Analytics(Resource):
             Returns a list of published models.
             '''
             _, col = analytics_collection()
-            cur = col.find({},{"_id":0})
+            cur = col.find({}, {"_id": 0})
             return [src for src in cur if published_model(src)]
 
     @ns_a.route('/models/publish/<model_id>/<flag>/')
@@ -524,7 +535,7 @@ class Analytics(Resource):
             if 'published' not in analytic or not analytic['published']:
                 return "No resource at that URL", 404
 
-            #get the input data
+            # get the input data
             print("hi25")
             data = request.get_json()
             print(data)
@@ -536,7 +547,7 @@ class Analytics(Resource):
     # @app.route('/analytics/<analytic_id>/', methods=['DELETE'])
     @ns_a.route('/<analytic_id>/')
     @api.doc(
-        params={'analytic_id': 'The ID assigned to a particular analtyic'})
+        params={'analytic_id': 'The ID assigned to a particular analytic'})
     class Analytic(Resource):
         @api.doc(responses={
             204: 'Resource removed successfully',
@@ -585,25 +596,25 @@ class Analytics(Resource):
         @api.doc(params={
             'payload': 'Must be a list of the model defined to the right.'
         },
-                 body='Matrix')
+            body='Matrix')
         def post(self, analytic_id):
             '''
             Apply a certain analytic to the provided input data.
             The input must be a list of datasets, which can be matrices and/or results.
 
             '''
-            #get the analytic
+            # get the analytic
             _, col = analytics_collection()
             isResultSource = False
 
-            #get the input data
+            # get the input data
             data = request.get_json(force=True)
             datasrc = data['src'][0]
             if isinstance(datasrc, list):
                 msg = "When Posting Analytic %s, datasrc was a list" % (
                     analytic_id)
                 print(msg)
-                return msg, 400    #Bad Request
+                return msg, 400  # Bad Request
             else:
                 print("Datasource is a <%s>" % type(datasrc))
 
@@ -613,7 +624,7 @@ class Analytics(Resource):
             inputs = data['inputs']
             name = data['name']
             res_id = utils.getNewId()
-            #see if the input data is a result
+            # see if the input data is a result
             if 'analytic_id' in datasrc:
                 isResultSource = True
                 mat_id = datasrc['src_id']
@@ -630,14 +641,14 @@ class Analytics(Resource):
             #     'name': name,
             #     'res_id': res_id
             # }))
-            #run analysis
+            # run analysis
             queue = Queue()
             try:
-                #single process for now
+                # single process for now
                 utils.run_analysis(queue, analytic_id, parameters, inputs,
                                    storepath, name)
 
-                #multiprocess solution from before
+                # multiprocess solution from before
                 # p = Process(target=utils.run_analysis, args=(queue, analytic_id, parameters, inputs, storepath, name))
                 # p.start()
                 # p.join() # this blocks until the process terminates
@@ -648,7 +659,7 @@ class Analytics(Resource):
                 return tb, 406
 
             if outputs != None:
-                #store metadata
+                # store metadata
                 _, res_col = results_collection()
                 try:
                     src = res_col.find({'src_id': mat_id})[0]
@@ -700,7 +711,7 @@ class Analytics(Resource):
             Apply a certain analytic to the provided input data and return the classification label(s).
             This request is only applicable to analytics that are of type 'Classificaiton'.
             '''
-            #get the analytic
+            # get the analytic
             _, col = analytics_collection()
             try:
                 analytic = col.find({'analytic_id': analytic_id})[0]
@@ -710,17 +721,29 @@ class Analytics(Resource):
             classname = analytic['classname']
             alg_type = analytic['type']
 
-            #make sure it is of type 'Classification'
+            # make sure it is of type 'Classification'
             if alg_type == 'Classification':
                 return "This analytic is not of type 'Classification'", 406
 
-            #get the input data
+            # get the input data
             data = request.get_json()
             parameters = data['parameters']
             inputs = data['inputs']
-            result = analytics.classify(analytic_id, parameters, inputs)
+            result = analytic.classify(analytic_id, parameters, inputs)
             return result, 200
 
+    @ns_a.route('/<analytic_id>/custom/<src_id>/<param1>/')
+    class Custom_1(Resource):
+
+        def post(self, analytic_id, src_id, param1=None):
+            client = db_client()
+            col = db_collection(client, DATALOADER_DB_NAME, DATALOADER_COL_NAME)
+            try:
+                src = find_source(col, src_id)
+            except IndexError:
+                return 'No resource at that URL.', 404
+            filepath = src['rootdir']
+            return utils.run_algorithm_custom(analytic_id, filepath=filepath, param1=param1)
 
 @ns_r.route('/')
 class Results(Resource):
@@ -748,9 +771,9 @@ class Results(Resource):
         Deletes all stored results.
         '''
         _, col = results_collection()
-        #remove the entries in mongo
+        # remove the entries in mongo
         col.remove({})
-        #remove the actual files
+        # remove the actual files
         for directory in os.listdir(RESULTS_PATH):
             file_path = os.path.join(RESULTS_PATH, directory)
             shutil.rmtree(file_path)
@@ -879,7 +902,7 @@ class Results(Resource):
             return 'No resource at that URL.', 404
 
         @ns_r.route(
-        '/<src_id>/<res_id>/download/<output_file>/<file_download_name>/')
+            '/<src_id>/<res_id>/download/<output_file>/<file_download_name>/')
         class Download(Resource):
             def get(self, src_id, res_id, output_file, file_download_name):
                 '''
