@@ -1,30 +1,30 @@
 import csv
+import os
 import pathlib
 import traceback
 
 from bedrock.analytics.CONSTANTS import RESULTS_PATH
 from bedrock.analytics.api import results_collection
-from bedrock.analytics.utils import Algorithm, getNewId, getCurrentTime
+from bedrock.analytics.utils import Algorithm, getCurrentTime, getNewId
 import logging
-import pandas as pd
 from rpy2.robjects import r, pandas2ri
 from rpy2.robjects.packages import importr
-from rpy2.rinterface import RRuntimeError
-
-import os
 
 
-class Analytics(Algorithm):
+class ActiveLearning(Algorithm):
 
     def __init__(self):
-        super(Analytics, self).__init__()
+        super(ActiveLearning, self).__init__()
         self.parameters = []
         self.inputs = []
         self.outputs = ['matrix.csv', 'summary.txt']
-        self.name = 'Cycle2 Analytics'
-        self.type = 'GLM'
-        self.description = 'Performs Stan GLM for NGS2 Cycle 2.'
-        self.parameters_spec = []
+        self.name = 'Cycle 2 Active Learning'
+        self.type = 'mcmc'
+        self.description = 'Performs Active Learning'
+        self.parameters_spec = [
+            {"name": "Regression Formula", "attrname": "formula", "value": "", "type": "input"},
+            {"name": "GLM family", "attrname": "family", "value": "binomial", "type": "input"}
+        ]
 
     def check_parameters(self):
         return True
@@ -36,7 +36,7 @@ class Analytics(Algorithm):
         # df = pd.read_csv(matrixPath, header=-1)
         # featuresList = pd.read_csv(featuresPath, header=-1)
 
-        # df.columns = featuresList.T.values[0]
+        #df.columns = featuresList.T.values[0]
 
         # return df
 
@@ -53,30 +53,28 @@ class Analytics(Algorithm):
         r("setwd('{}')".format(kwargs["filepath"] + ""))
         r("load('.RData')")
 
+        # Load these libraries - if not already loaded needed
+        r('if (!require("pacman")) install.packages("pacman")')
+        r('library ("pacman")')
+        r("pacman::p_load(rstan, rstanarm, ggplot2, Hmisc, httr, bridgesampling, DT, dplyr, bayesplot, knitr)")
+        r("set.seed(12345)")
+        r("nIter = 10000")
+        r("LOCAL <- TRUE")
+
         # save R workspace and load workspaces between opals!
         # 1. load workspace created during data load
 
-        rstan = importr("rstanarm")
-        # rdf = pandas2ri.py2ri(df)
-        # robjects.globalenv["rdf"] = rdf
-
         opal_dir = pathlib.Path(__file__).parent
 
-        # Note: BoomTown Metadata needs to be present too or it will fail without real error
-        try:
-            r("source('{}/analytics.R')".format(opal_dir))  # Load Wrangle
-        except RRuntimeError as e:
-            print(e)
+        # 2. Run R Script
+        r("source('{}/active_learning.R')".format(opal_dir))  # Active Learning
 
         r("save.image()")  # saves to .RData by default
 
-        # Get the GLM Results
-        summary_text = r('summary(glmmoverall)')
-        glm_result = r("data.frame(glmmoverall)")
-        self.results = {'matrix.csv': list(csv.reader(glm_result.to_csv().split('\n'))),
-                        'summary.txt': [str(summary_text)]}
+        ranking_result = r("x.ranked.post.entropy")
+        self.results = {'matrix.csv': list(csv.reader(ranking_result.to_csv().split('\n')))}
 
-        self.write_results(kwargs['filepath'] + "/output")  # should it be results? + calling this since it's custom
+        self.write_results(kwargs['filepath'] + "output") # should it be results? + calling this since it's custom
 
         # store results in database
 
@@ -123,10 +121,3 @@ class Analytics(Algorithm):
             tb = traceback.format_exc()
             logging.error(tb)
             return tb, 406
-
-        # rglmString = 'output <- stan_glmer({}, data = {}, family="{}")'.format(self.formula, "rdf", self.family)
-        # logging.error(rglmString)
-        # r(rglmString)
-        # summary_txt = r('s<-summary(output)')
-        # coef_table = r('data.frame(s$coefficients)')
-        # self.results = {'matrix.csv': list(csv.reader(coef_table.to_csv().split('\n'))), 'summary.txt': [str(summary_txt)]}

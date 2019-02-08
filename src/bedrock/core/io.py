@@ -3,6 +3,8 @@ This will allow bedrock to support data stored in HDFS, on remote clusters, and 
 """
 import os
 import json
+from multiprocessing.pool import Pool
+
 from bedrock.CONSTANTS import *
 import werkzeug
 import requests
@@ -21,6 +23,10 @@ def write_source_file(dataloader_path, src_id, uploadedfile):
     return rootpath, filepath
 
 
+def d_file_helper(p_items):
+    filepath, local_filename = download_file(p_items[0], p_items[1], p_items[2])
+    return filepath
+
 def write_source_files_web(dataloader_path, src_id, names_urls):
     """Writes multiple files downloaded from a web source"""
 
@@ -29,9 +35,12 @@ def write_source_files_web(dataloader_path, src_id, names_urls):
         os.makedirs(rootpath, DIRMASK)
 
     filepaths = []
-    for name, url in names_urls:
-        filepath, local_filename = download_file(rootpath, name, url)
-        filepaths.append(filepath)
+
+    pool = Pool(processes=4)
+
+    filepaths = pool.map(d_file_helper, list(map(lambda x: (rootpath, x[0], x[1]), names_urls)))
+
+    # for name, url in names_urls:
 
     return rootpath, filepaths
 
