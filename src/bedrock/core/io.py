@@ -23,6 +23,7 @@ def write_source_file(dataloader_path, src_id, uploadedfile):
     return rootpath, filepath
 
 
+
 def d_file_helper(p_items):
     filepath, local_filename = download_file(p_items[0], p_items[1], p_items[2])
     return filepath
@@ -35,13 +36,9 @@ def write_source_files_web(dataloader_path, src_id, names_urls):
         os.makedirs(rootpath, DIRMASK)
 
     filepaths = []
-
     pool = Pool(processes=4)
 
     filepaths = pool.map(d_file_helper, list(map(lambda x: (rootpath, x[0], x[1]), names_urls)))
-
-    # for name, url in names_urls:
-
     return rootpath, filepaths
 
 

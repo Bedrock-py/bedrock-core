@@ -317,6 +317,7 @@ class Sources(Resource):
                             post_params) == 1:  # at this point url is always included and so anything after indicates conf
 
                         # download files from OSF
+
                         all_names = []
                         try:
                             next_filelist_url = post_params["url"]
