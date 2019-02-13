@@ -173,7 +173,8 @@ def get_metadata(analytic_id):
 
 def run_algorithm_custom(analytic_id, **kwargs):
     alg = get_class(analytic_id)
-    alg.custom(**kwargs)
+    kwargs["analytic_id"] = analytic_id
+    return alg.custom(**kwargs)
 
 
 def run_analysis(queue, analytic_id, parameters, inputs, storepath, name):

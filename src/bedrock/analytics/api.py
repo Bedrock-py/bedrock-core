@@ -743,7 +743,7 @@ class Analytics(Resource):
             except IndexError:
                 return 'No resource at that URL.', 404
             filepath = src['rootdir']
-            return utils.run_algorithm_custom(analytic_id, filepath=filepath, param1=param1)
+            return utils.run_algorithm_custom(analytic_id, filepath=filepath, param1=param1, src_id=src_id)
 
 @ns_r.route('/')
 class Results(Resource):
@@ -923,4 +923,4 @@ class Results(Resource):
                                 as_attachment=True,
                                 attachment_filename=file_download_name)
 
-                return ('No resource at that URL.', 404)
+                return 'No resource at that URL.', 404

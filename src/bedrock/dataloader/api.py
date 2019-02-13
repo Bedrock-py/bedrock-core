@@ -317,19 +317,25 @@ class Sources(Resource):
                             post_params) == 1:  # at this point url is always included and so anything after indicates conf
 
                         # download files from OSF
+
+                        all_names = []
                         try:
-                            osf_file_list_resp = requests.get(post_params["url"])
-                            json_resp = osf_file_list_resp.json()
-                            file_dicts = list(filter(lambda x: x["attributes"]['kind'] == "file", json_resp["data"]))
-                            file_urls = list(map(lambda x: x["links"]["download"], file_dicts))
-                            file_names = list(map(lambda x: x["attributes"]["name"], file_dicts))
-                            names_urls = list(zip(file_names, file_urls))
+                            next_filelist_url = post_params["url"]
+                            while next_filelist_url is not None:
+                                osf_file_list_resp = requests.get(next_filelist_url)
+                                json_resp = osf_file_list_resp.json()
+                                file_dicts = list(filter(lambda x: x["attributes"]['kind'] == "file", json_resp["data"]))
+                                file_urls = list(map(lambda x: x["links"]["download"], file_dicts))
+                                file_names = list(map(lambda x: x["attributes"]["name"], file_dicts))
+                                names_urls = list(zip(file_names, file_urls))
+                                all_names.extend(names_urls)
+                                next_filelist_url = json_resp['links']['next']
                         except:
-                            logging.error("Files at URL couldn't not be loaded.")
+                            logging.error("Files at URL couldn't be loaded.")
                             tb = traceback.format_exc()
                             return tb, 406
 
-                        for f_name, url in names_urls:
+                        for f_name, url in all_names:
                             try:
                                 ext = re.split('\.', f_name)[-1:][0]  # reverse it and take first 1
                                 if not ext in ALLOWED_EXTENSIONS:
@@ -339,7 +345,7 @@ class Sources(Resource):
                                 print("WARN: File not supported, couldn't determine suffix.")
 
                         src_type = "folder"
-                        rootpath, filepath = write_source_files_web(DATALOADER_PATH, src_id, names_urls)
+                        rootpath, filepath = write_source_files_web(DATALOADER_PATH, src_id, all_names)
 
                     else:
                         src_type = 'conf'
